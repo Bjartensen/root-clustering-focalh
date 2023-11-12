@@ -9,7 +9,9 @@ void Cell::squawk(){
 
 	for (auto v : neighbors){
 		std::cout << "\t";
-		v->squawk();
+		std::cout << "x:" << v->x_position << " y:" << v->y_position;
+		std::cout << " val:" << v->value << std::endl;
+		//v->squawk();
 	}
 }
 
