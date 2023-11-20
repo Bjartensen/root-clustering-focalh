@@ -12,7 +12,11 @@
 #include <filesystem>
 #include <regex>
 
-const double SATURATION_VALUE = 4095;
+//const double SATURATION_VALUE = 4095;
+const double SATURATION_VALUE = 12000;
+//const std::string IMAGE_EXTENSION = ".png";
+const std::string IMAGE_EXTENSION = ".pdf";
+std::string ANALYSIS_TAG = "";
 
 bool focal_h_grid(Grid& g);
 bool fill_grid_ttree_entry(TTree& t, Grid& g, int e, bool override_values = false);
@@ -38,12 +42,45 @@ std::vector<std::string> get_files(std::string folder);
 
 int main(int argc, char* argv[]){
 
+
+
+
+	/*
+	Grid g;
+	if (!focal_h_grid(g)) return false;
+	if (!focal_h_grid_add_neighbors_all(g)) return false;
+	calc_neighbors_all(g);
+
+
+	std::string folder = "../data/testbeam/";
+	std::string file = "../data/testbeam/Run_3132_monocluster.root";
+	std::string filename_fig = "../data/testbeam/test.png";
+
+
+	std::unique_ptr<TFile> f = std::make_unique<TFile>(file.c_str(), "READ");
+	auto t = static_cast<TTree*>(f->Get("T"));
+
+
+	fill_grid_ttree_entry(*t, g, 0, true);
+	save_heatmap(g, filename_fig, "adsf");
+	*/
+
+
+
 	std::vector<std::pair<double, double>> MA_params;
-	MA_params.push_back(std::make_pair(100, 10));
-	MA_params.push_back(std::make_pair(300, 10));
-	MA_params.push_back(std::make_pair(500, 10));
+	//ANALYSIS_TAG = "_DIFFSEED";
+	//MA_params.push_back(std::make_pair(100, 10));
+	//MA_params.push_back(std::make_pair(300, 10));
+	//MA_params.push_back(std::make_pair(500, 10));
+	//MA_params.push_back(std::make_pair(800, 10));
+	//MA_params.push_back(std::make_pair(1000, 10));
+
+	ANALYSIS_TAG = "_DIFFAGG";
 	MA_params.push_back(std::make_pair(800, 10));
-	MA_params.push_back(std::make_pair(1000, 10));
+	MA_params.push_back(std::make_pair(800, 100));
+	MA_params.push_back(std::make_pair(800, 300));
+	MA_params.push_back(std::make_pair(800, 400));
+	MA_params.push_back(std::make_pair(800, 500));
 
 	std::string folder = "../data/focalsim/pi_plus_100e_deg0/";
 
@@ -101,14 +138,18 @@ int main(int argc, char* argv[]){
 		leftover_max_adc_points_vec.push_back(std::move(leftover_max_adc_points));
 	}
 
-	std::string cluster_count_filename = folder + "cluster_count.png";
+	std::string cluster_count_filename = folder + "cluster_count" + ANALYSIS_TAG + IMAGE_EXTENSION;
 	save_point_plot(cluster_count_points_vec, "Energy [GeV]", "Clusters", "Clusters per particle", cluster_count_filename);
 
-	std::string fraction_of_energy_filename = folder + "fraction_of_energy.png";
+	std::string fraction_of_energy_filename = folder + "fraction_of_energy" + ANALYSIS_TAG + IMAGE_EXTENSION;
 	save_point_plot(fraction_of_energy_points_vec, "Energy [GeV]", "Fraction of total ADC", "Fraction of total ADC", fraction_of_energy_filename);
 
-	std::string leftover_max_adc_filename = folder + "leftover_max_adc.png";
+	std::string leftover_max_adc_filename = folder + "leftover_max_adc" + ANALYSIS_TAG + IMAGE_EXTENSION;
 	save_point_plot(leftover_max_adc_points_vec, "Energy [GeV]", "Leftover max ADC", "Leftover max ADC", leftover_max_adc_filename);
+	
+
+
+
 
 	return 0;
 }
@@ -365,8 +406,9 @@ double mean(std::vector<double> &vec){
 
 void save_heatmap(Grid &g, std::string filename, std::string title){
 	std::unique_ptr<TH2Poly> hist = g.plot_grid();
-	hist->SetMaximum(SATURATION_VALUE);
-	std::unique_ptr<TCanvas> c = std::make_unique<TCanvas>("c", "c", 600, 600);
+	if (SATURATION_VALUE > 0)
+		hist->SetMaximum(SATURATION_VALUE);
+	std::unique_ptr<TCanvas> c = std::make_unique<TCanvas>("c", "c", 2400, 2400);
 	c->cd();
 	gStyle->SetOptStat(0);
 	hist->SetTitle(title.c_str());
@@ -378,7 +420,7 @@ void save_heatmap(Grid &g, std::string filename, std::string title){
 
 void save_point_plot(std::vector<std::unique_ptr<TGraphErrors>> &point_plots, std::string x_label, std::string y_label, std::string legend_title, std::string filename){
 
-	std::unique_ptr<TCanvas> c = std::make_unique<TCanvas>("c", "c", 800, 800);
+	std::unique_ptr<TCanvas> c = std::make_unique<TCanvas>("c", "c", 1);
 	std::unique_ptr<TMultiGraph> multi = std::make_unique<TMultiGraph>();
 	c->cd();
 
@@ -395,7 +437,7 @@ void save_point_plot(std::vector<std::unique_ptr<TGraphErrors>> &point_plots, st
 	//leg->SetBorderSize(0);
 	leg->SetHeader(legend_title.c_str(), "C");
 
-	c->SetTopMargin(0.2);
+	//c->SetTopMargin(0.2);
 	c->SetRightMargin(0.1);
 	c->SetLeftMargin(0.15);
 	c->Update();
