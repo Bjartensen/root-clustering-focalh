@@ -21,7 +21,7 @@ private:
 
 public:
 	Clustering(Grid *_g);
-	virtual void tag() = 0;
+	virtual bool tag() = 0;
 
 	Grid* get_grid(){return g;}
 
@@ -48,48 +48,8 @@ public:
 	std::vector<std::string> get_clusters();
 	std::string get_largest_cluster();
 	std::vector<std::string> get_remaining_clusters(std::vector<std::string> &exclude_clusters);
+	std::pair<double, double> cluster_center_of_mass(std::string tag);
 
 };
-
 
 #endif // CLUSTERING_H
-
-#ifndef CELLULAR_AUTOMATA_H
-#define CELLULAR_AUTOMATA_H
-
-// Move to own file at some point
-class CellularAutomata : public Clustering{
-
-public:
-	CellularAutomata(Grid *_g) : Clustering(_g) {}
-
-	void tag();
-	bool find_maxima();
-	bool is_maximum(Cell *c);
-	static bool greater(Cell* a, Cell* b){return (a->get_value() > b->get_value());}
-};
-
-#endif // CELLULAR_AUTOMATA_H
-
-
-#ifndef MODIFIED_AGGREGATION_H
-#define MODIFIED_AGGREGATION_H
-
-// Move to own file at some point
-class ModifiedAggregation : public Clustering{
-	double seed_threshold;
-	double aggregation_threshold;
-public:
-	ModifiedAggregation(Grid *_g, double _seed, double _agg) : Clustering(_g), seed_threshold(_seed), aggregation_threshold(_agg) {}
-
-	void tag();
-	//bool find_maximum(std::vector<Cell*> *pool);
-	//bool is_maximum(Cell *c);
-	static bool greater(Cell* a, Cell* b){return (a->get_value() > b->get_value());}
-	bool spread(Cell* c);
-
-	Cell* find_maximum_untagged();
-
-};
-
-#endif // MODIFIED_AGGREGATION_H

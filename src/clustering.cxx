@@ -125,141 +125,22 @@ std::vector<std::string> Clustering::get_remaining_clusters(std::vector<std::str
 				remaining_clusters.push_back(v);
 
 	return remaining_clusters;
-
 }
 
-
-
-
-
-/////////////////////////////
-/////////////////////////////
-/////////////////////////////
-/////////////////////////////
-/////////////////////////////
-void CellularAutomata::tag(){
-	// Always go through all cells and check:
-	//	Do they have neighbors?
-	//		Do the neighbors have tags?
-	//			Add tags.
-
-}
-
-bool CellularAutomata::find_maxima(){
-	std::vector<Cell*> c;
-	for (auto &v : *get_grid()->get_cells()){
-		c.push_back(v.get());
-	}
-	std::sort(c.begin(), c.end(), greater);
-
-	// can compare pointers
-	Cell* max = c.at(0);
-	for (auto v : c){
-		if (is_maximum(v))
-			std::cout << "Maximum at " << v->get_id() << ": " << v->get_value() << std::endl;
-	}
-
-
-	return true;
-}
-
-bool CellularAutomata::is_maximum(Cell *c){
-	for (auto v : *c->get_neighbors())
-		if (v->get_value() > c->get_value()) // 4095 may be next to each other...
-			return false;
-	return true;
-}
-
-
-
-///////////////////////////////
-///////////////////////////////
-///////////////////////////////
-///////////////////////////////
-///////////////////////////////
-///////////////////////////////
-///////////////////////////////
-void ModifiedAggregation::tag(){
-	Cell* c = nullptr;
-
-	unsigned int tag_num = 1;
-	bool more_clusters = true;
-	while (more_clusters){
-		more_clusters = false;
-		c = find_maximum_untagged();
-		if (c){
-			add_tag(std::to_string(tag_num), c);
-			spread(c);
-			more_clusters = true;
-			tag_num++;
-		}
-	}
-}
-
-
-bool ModifiedAggregation::spread(Cell *c){
-	std::string cluster_tag = get_tag(c);
-
-
-	bool more_spread = true;
-	while (more_spread){
-		more_spread = false;
-
-		std::vector<Cell*> tagged_cells_local;
-		for (auto &m : *get_tagged_cells()){
-			if (m.second == cluster_tag){
-				tagged_cells_local.push_back(m.first);
-			}
-		}
-
-		for (auto &tc : tagged_cells_local){
-			for (auto &v : *tc->get_neighbors()){
-				if (is_tagged(v))
-					continue;
-				if (v->get_value() < aggregation_threshold)
-					continue;
-				if (v->get_value() <= tc->get_value()){
-					add_tag(cluster_tag, v);
-					more_spread = true;
-				}
-			}
-		}
-
-
-	}
-
-
-
-	// While loop to:
-	//	find neighbors that qualify for spread
-	return true;
-}
-
-Cell* ModifiedAggregation::find_maximum_untagged(){
-	// check for tagged
+std::pair<double, double> Clustering::cluster_center_of_mass(std::string tag){
+	// sum coordinates times value
+	// divide by sum
 	
-	auto max_it = get_untagged_cells()->begin();
-	if (max_it == get_untagged_cells()->end())
-		return nullptr;
-	Cell* max = *max_it;
-	for (const auto& v : *get_untagged_cells()){
-		if (is_tagged(v)){
-			continue;
+	double x_mean = 0.0;
+	double y_mean = 0.0;
+	for (const auto &v : *get_tagged_cells())
+		if (v.second == tag){
+			x_mean += v.first->get_x_position() * v.first->get_value();
+			y_mean += v.first->get_y_position() * v.first->get_value();
 		}
-		if (v->get_value() < seed_threshold)
-			continue;
-		if (v->get_value() > max->get_value()){
-			max = v;
-		}
-	}
+	x_mean /= get_cluster_sum(tag);
+	y_mean /= get_cluster_sum(tag);
+	
+	return std::make_pair(x_mean, y_mean);
 
-	// CASE1: No other max and first is untagged: return true.
-	// CASE2: No other max and first is tagged: return false.
-	// CAse3: Other max found and has been checked for untagged. Return true.
-
-	if (is_tagged(max))
-		return nullptr;
-	if (max->get_value() < seed_threshold)
-		return nullptr;
-	return max;
 }

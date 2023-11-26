@@ -25,9 +25,11 @@ add_library(clustering_util SHARED
 	src/cell.cxx
 	src/grid.cxx
 	src/clustering.cxx
+	src/modified_aggregation.cxx
 	include/cell.h
 	include/grid.h
 	include/clustering.h
+	include/modified_aggregation.h
 )
 
 target_link_libraries(clustering_util PUBLIC 

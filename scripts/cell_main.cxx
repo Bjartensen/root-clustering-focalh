@@ -1,4 +1,5 @@
-#include "clustering.h"
+//#include "clustering.h"
+#include "modified_aggregation.h"
 #include <iostream>
 #include <TCanvas.h>
 #include <TTree.h>
@@ -12,10 +13,10 @@
 #include <filesystem>
 #include <regex>
 
-//const double SATURATION_VALUE = 4095;
-const double SATURATION_VALUE = 12000;
-//const std::string IMAGE_EXTENSION = ".png";
-const std::string IMAGE_EXTENSION = ".pdf";
+const double SATURATION_VALUE = 4095;
+//const double SATURATION_VALUE = 12000;
+const std::string IMAGE_EXTENSION = ".png";
+//const std::string IMAGE_EXTENSION = ".pdf";
 std::string ANALYSIS_TAG = "";
 
 bool focal_h_grid(Grid& g);
@@ -24,21 +25,21 @@ bool focal_h_grid_add_neighbors_cell(Grid& g, std::string cell, std::initializer
 bool focal_h_grid_add_neighbors_all(Grid &g);
 bool calc_neighbors(Grid &g, Cell *c);
 bool calc_neighbors_all(Grid &g);
-std::unique_ptr<TGraphErrors> plot_points(std::vector<double> &x, std::vector<double> &y, std::vector<double> &y_err);
-bool MA_analysis(std::string folder, double MA_seed_threshold, double MA_aggregation_threshold,
-	std::vector<double> &energy, 
-	std::vector<double> &cluster_count,
-	std::vector<double> &fraction_of_energy,
-	std::vector<double> &leftover_max_adc,
-	std::vector<double> &cluster_count_err,
-	std::vector<double> &fraction_of_energy_err,
-	std::vector<double> &leftover_max_adc_err
+std::unique_ptr<TGraphErrors> plot_points(std::vector<std::pair<int, std::vector<double>>> data);
+std::unique_ptr<TH1D> plot_1dhist(std::vector<double> &y);
+bool MA_clustering(std::string folder, double MA_seed_threshold, double MA_aggregation_threshold,
+	std::vector<std::pair<int, std::vector<double>>> &cluster_count,
+	std::vector<std::pair<int, std::vector<double>>> &fraction_of_energy,
+	std::vector<std::pair<int, std::vector<double>>> &leftover_max_adc,
+	std::vector<std::pair<int, std::vector<std::vector<std::pair<double, double>>>>> &cluster_center_of_mass
 );
 double mean(std::vector<double> &vec);
 double standard_error(std::vector<double> &samples);
 void save_point_plot(std::vector<std::unique_ptr<TGraphErrors>> &point_plots, std::string x_label, std::string y_label, std::string legend_title, std::string filename);
+void save_1dhist(std::unique_ptr<TH1D> &hist, std::string x_label, std::string y_label, std::string legend_title, std::string filename);
 void save_heatmap(Grid &g, std::string filename, std::string title);
 std::vector<std::string> get_files(std::string folder);
+void analysis();
 
 int main(int argc, char* argv[]){
 
@@ -67,75 +68,98 @@ int main(int argc, char* argv[]){
 
 
 
+
+	
+	analysis();
+
+
+
+
+	return 0;
+}
+
+void analysis(){
 	std::vector<std::pair<double, double>> MA_params;
-	//ANALYSIS_TAG = "_DIFFSEED";
+	ANALYSIS_TAG = "_MISC";
 	//MA_params.push_back(std::make_pair(100, 10));
 	//MA_params.push_back(std::make_pair(300, 10));
 	//MA_params.push_back(std::make_pair(500, 10));
-	//MA_params.push_back(std::make_pair(800, 10));
+	MA_params.push_back(std::make_pair(800, 10));
 	//MA_params.push_back(std::make_pair(1000, 10));
 
-	ANALYSIS_TAG = "_DIFFAGG";
-	MA_params.push_back(std::make_pair(800, 10));
-	MA_params.push_back(std::make_pair(800, 100));
-	MA_params.push_back(std::make_pair(800, 300));
-	MA_params.push_back(std::make_pair(800, 400));
-	MA_params.push_back(std::make_pair(800, 500));
+	//ANALYSIS_TAG = "_DIFFAGG";
+	//MA_params.push_back(std::make_pair(800, 10));
+	//MA_params.push_back(std::make_pair(800, 100));
+	//MA_params.push_back(std::make_pair(800, 300));
+	//MA_params.push_back(std::make_pair(800, 400));
+	//MA_params.push_back(std::make_pair(800, 500));
 
+	//std::string folder = "../data/focalsim/pi_plus_100e_deg0/";
 	std::string folder = "../data/focalsim/pi_plus_100e_deg0/";
+	//std::string folder = "../data/focalsim/pi_plus_deg0/";
 
-	//std::unique_ptr<TCanvas> c = std::make_unique<TCanvas>("c", "c", 800, 800);
-	//std::unique_ptr<TMultiGraph> multi = std::make_unique<TMultiGraph>();
 	std::vector<std::unique_ptr<TGraphErrors>> cluster_count_points_vec;
 	std::vector<std::unique_ptr<TGraphErrors>> fraction_of_energy_points_vec;
 	std::vector<std::unique_ptr<TGraphErrors>> leftover_max_adc_points_vec;
-	//c->cd();
+	std::vector<std::unique_ptr<TH1D>> cluster_count_hist_vec;
 
 	for (int i = 0; i < MA_params.size(); i++){
-		std::vector<double> energy;
-		std::vector<double> cluster_count;
-		std::vector<double> fraction_of_energy;
-		std::vector<double> leftover_max_adc;
-
-		std::vector<double> cluster_count_err;
-		std::vector<double> fraction_of_energy_err;
-		std::vector<double> leftover_max_adc_err;
+		std::vector<std::pair<int, std::vector<double>>> cluster_count;
+		std::vector<std::pair<int, std::vector<double>>> fraction_of_energy;
+		std::vector<std::pair<int, std::vector<double>>> leftover_max_adc;
+		std::vector<std::pair<int, std::vector<std::vector<std::pair<double, double>>>>> cluster_center_of_mass;
 
 		double MA_seed_threshold = MA_params.at(i).first;
 		double MA_aggregation_threshold = MA_params.at(i).second;
 		std::string MA_params_desc = "Seed thld: " + std::to_string(int(MA_seed_threshold)) + ", agg thld: " + std::to_string(int(MA_aggregation_threshold));
 		std::string MA_params_short = "MA_"+std::to_string(int(MA_seed_threshold))+"_"+std::to_string(int(MA_aggregation_threshold));
 
-		MA_analysis(folder, MA_seed_threshold, MA_aggregation_threshold,
-					energy,
+		MA_clustering(folder, MA_seed_threshold, MA_aggregation_threshold,
 					cluster_count,
 					fraction_of_energy,
 					leftover_max_adc,
-					cluster_count_err,
-					fraction_of_energy_err,
-					leftover_max_adc_err
+					cluster_center_of_mass
 				);
 
 		// Cluster count
-		std::unique_ptr<TGraphErrors> cluster_count_points = plot_points(energy, cluster_count, cluster_count_err);
+		std::unique_ptr<TGraphErrors> cluster_count_points = plot_points(cluster_count);
 		cluster_count_points->SetMarkerStyle(21+i);
 		cluster_count_points->SetMarkerColor(1+i);
 		cluster_count_points->SetName(MA_params_desc.c_str());
 		cluster_count_points_vec.push_back(std::move(cluster_count_points));
 
 		// Fraction of total
-		std::unique_ptr<TGraphErrors> fraction_of_energy_points = plot_points(energy, fraction_of_energy, fraction_of_energy_err);
+		std::unique_ptr<TGraphErrors> fraction_of_energy_points = plot_points(fraction_of_energy);
 		fraction_of_energy_points->SetMarkerStyle(21+i);
 		fraction_of_energy_points->SetMarkerColor(1+i);
 		fraction_of_energy_points->SetName(MA_params_desc.c_str());
 		fraction_of_energy_points_vec.push_back(std::move(fraction_of_energy_points));
 
 		// Leftover max ADC
-		std::unique_ptr<TGraphErrors> leftover_max_adc_points = plot_points(energy, leftover_max_adc, leftover_max_adc_err);
+		std::unique_ptr<TGraphErrors> leftover_max_adc_points = plot_points(leftover_max_adc);
 		leftover_max_adc_points->SetMarkerStyle(21+i);
 		leftover_max_adc_points->SetMarkerColor(1+i);
 		leftover_max_adc_points->SetName(MA_params_desc.c_str());
 		leftover_max_adc_points_vec.push_back(std::move(leftover_max_adc_points));
+
+		// Number of clusters hist
+		for (int i = 0 ; i < cluster_count.size(); i++){
+			std::unique_ptr<TH1D> cluster_count_hist = plot_1dhist(cluster_count.at(i).second);
+			cluster_count_hist->SetDefaultBufferSize();
+			cluster_count_hist->SetFillColor(kBlue-5);
+			std::string temp_filename = std::to_string(int(cluster_count.at(i).first));
+			cluster_count_hist->SetTitle(temp_filename.c_str());
+			cluster_count_hist_vec.push_back(std::move(cluster_count_hist));
+		}
+
+		for (const auto &v : cluster_center_of_mass){
+			for (const auto &c : v.second){
+				for (const auto &e : c)
+					std::cout << "x:" << e.first << ",y:" << e.second;
+				std::cout << std::endl;
+			}
+		}
+
 	}
 
 	std::string cluster_count_filename = folder + "cluster_count" + ANALYSIS_TAG + IMAGE_EXTENSION;
@@ -146,27 +170,25 @@ int main(int argc, char* argv[]){
 
 	std::string leftover_max_adc_filename = folder + "leftover_max_adc" + ANALYSIS_TAG + IMAGE_EXTENSION;
 	save_point_plot(leftover_max_adc_points_vec, "Energy [GeV]", "Leftover max ADC", "Leftover max ADC", leftover_max_adc_filename);
-	
 
+	for (int i = 0; i < cluster_count_hist_vec.size(); i++){
+		std::string temp_extension = cluster_count_hist_vec.at(i)->GetTitle();
+		std::string cluster_count_hist_filename = folder + "number_of_clusters_" + temp_extension + ANALYSIS_TAG + IMAGE_EXTENSION;
+		save_1dhist(cluster_count_hist_vec.at(i), "Count", "Clusters", "Clusters", cluster_count_hist_filename);
+	}
 
-
-
-	return 0;
 }
 
 
-
-
-bool MA_analysis(std::string folder, double MA_seed_threshold, double MA_aggregation_threshold,
-	std::vector<double> &energy, 
-	std::vector<double> &cluster_count,
-	std::vector<double> &fraction_of_energy,
-	std::vector<double> &leftover_max_adc,
-	std::vector<double> &cluster_count_err,
-	std::vector<double> &fraction_of_energy_err,
-	std::vector<double> &leftover_max_adc_err
+bool MA_clustering(std::string folder, double MA_seed_threshold, double MA_aggregation_threshold,
+	std::vector<std::pair<int, std::vector<double>>> &cluster_count,
+	std::vector<std::pair<int, std::vector<double>>> &fraction_of_energy,
+	std::vector<std::pair<int, std::vector<double>>> &leftover_max_adc,
+	std::vector<std::pair<int, std::vector<std::vector<std::pair<double, double>>>>> &cluster_center_of_mass
 ){
 
+	// REWORK
+	// Change returning data to vector<pair<energy, data>>
 
 	std::vector<std::string> files = get_files(folder);
 	//files.push_back("250_1_analysis.root");
@@ -182,35 +204,51 @@ bool MA_analysis(std::string folder, double MA_seed_threshold, double MA_aggrega
 		std::unique_ptr<TFile> f = std::make_unique<TFile>(files.at(i).c_str(), "READ");
 		auto t = static_cast<TTree*>(f->Get("T"));
 		int energy_temp = static_cast<TParameter<int>*>(f->Get("energy"))->GetVal();
-		energy.push_back(double(energy_temp));
 
 		std::vector<double> cluster_count_temp;
 		std::vector<double> fraction_of_energy_temp;
 		std::vector<double> leftover_max_adc_temp;
-
+		std::vector<std::vector<std::pair<double, double>>> cluster_center_of_mass_temp;
 		for (int e = 0; e < t->GetEntries(); e++){
 
 			fill_grid_ttree_entry(*t, g, e, true);
 
 			ModifiedAggregation ma(&g, MA_seed_threshold, MA_aggregation_threshold);
-			ma.tag();
-			std::vector<std::string> main_cluster_vec;
-			std::string main_cluster = ma.get_largest_cluster();
-			main_cluster_vec.push_back(main_cluster);
-			std::vector<std::string> remaining_clusters = ma.get_remaining_clusters(main_cluster_vec);
-			if (remaining_clusters.size() > 0){
-				std::string max = remaining_clusters.at(0);
-				for (auto &v : remaining_clusters){
-					if (ma.get_cluster_max_adc(v) > ma.get_cluster_max_adc(max))
-						max = v;
+			
+			// Any clusters found
+			if (ma.tag()){
+				std::vector<std::string> main_cluster_vec;
+				std::string main_cluster = ma.get_largest_cluster();
+				main_cluster_vec.push_back(main_cluster);
+				std::vector<std::string> remaining_clusters = ma.get_remaining_clusters(main_cluster_vec);
+				if (remaining_clusters.size() > 0){
+					std::string max = remaining_clusters.at(0);
+					for (auto &v : remaining_clusters){
+						if (ma.get_cluster_max_adc(v) > ma.get_cluster_max_adc(max))
+							max = v;
+					}
+					leftover_max_adc_temp.push_back(ma.get_cluster_max_adc(max));
+				}else{
+					leftover_max_adc_temp.push_back(0);
 				}
-				leftover_max_adc_temp.push_back(ma.get_cluster_max_adc(max));
+
+				fraction_of_energy_temp.push_back(ma.get_cluster_sum(main_cluster)/ma.get_sum());
+				cluster_count_temp.push_back(ma.get_cluster_count());
+				//number_of_clusters.push_back(ma.get_cluster_count());
+				ma.cluster_center_of_mass(main_cluster);
+				std::vector<std::pair<double, double>> event_cluster_center_of_mass_temp;
+				for (const auto &t : ma.get_clusters())
+					event_cluster_center_of_mass_temp.push_back(ma.cluster_center_of_mass(t));
+				cluster_center_of_mass_temp.push_back(event_cluster_center_of_mass_temp);
+
+			// No clusters found
 			}else{
+				cluster_count_temp.push_back(0);
+				//number_of_clusters.push_back(0);
+				fraction_of_energy_temp.push_back(0);
 				leftover_max_adc_temp.push_back(0);
 			}
-
-			cluster_count_temp.push_back(ma.get_cluster_count());
-			fraction_of_energy_temp.push_back(ma.get_cluster_sum(main_cluster)/ma.get_sum());
+			
 
 			//Plotting heatmap
 			//std::string fig_name = files.at(i) + std::to_string(i) + "_" + std::to_string(e) + ".png";
@@ -219,14 +257,13 @@ bool MA_analysis(std::string folder, double MA_seed_threshold, double MA_aggrega
 			//save_heatmap(g, fig_name, title);
 
 		}
-		cluster_count.push_back(mean(cluster_count_temp));
-		cluster_count_err.push_back(standard_error(cluster_count_temp));
+		cluster_count.push_back(std::make_pair(energy_temp, cluster_count_temp));
 
-		fraction_of_energy.push_back(mean(fraction_of_energy_temp));
-		fraction_of_energy_err.push_back(standard_error(fraction_of_energy_temp));
+		fraction_of_energy.push_back(std::make_pair(energy_temp, fraction_of_energy_temp));
 
-		leftover_max_adc.push_back(mean(leftover_max_adc_temp));
-		leftover_max_adc_err.push_back(standard_error(leftover_max_adc_temp));
+		leftover_max_adc.push_back(std::make_pair(energy_temp, leftover_max_adc_temp));
+
+		cluster_center_of_mass.push_back(std::make_pair(energy_temp, cluster_center_of_mass_temp));
 	}
 
 	return true;
@@ -444,12 +481,13 @@ void save_point_plot(std::vector<std::unique_ptr<TGraphErrors>> &point_plots, st
 	c->SaveAs(filename.c_str());
 }
 
-std::unique_ptr<TGraphErrors> plot_points(std::vector<double> &x, std::vector<double> &y, std::vector<double> &y_err){
+std::unique_ptr<TGraphErrors> plot_points(std::vector<std::pair<int, std::vector<double>>> data){
 
 	std::unique_ptr<TGraphErrors> graph = std::make_unique<TGraphErrors>();
-	for (int i = 0; i < x.size(); i++){
-		graph->SetPoint(i, x.at(i), y.at(i));
-		graph->SetPointError(i, 0, y_err.at(i));
+
+	for (int i = 0; i < data.size(); i++){
+		graph->SetPoint(i, data.at(i).first, mean(data.at(i).second));
+		graph->SetPointError(i, 0, standard_error(data.at(i).second));
 	}
 	graph->SetName("graph");
 	graph->SetMarkerStyle(21);
@@ -460,6 +498,34 @@ std::unique_ptr<TGraphErrors> plot_points(std::vector<double> &x, std::vector<do
 	return std::move(graph);
 }
 
+std::unique_ptr<TH1D> plot_1dhist(std::vector<double> &y){
+	std::set<double> unq;
+	for (const auto &v : y)
+		unq.insert(v);
+	std::unique_ptr<TH1D> ptr = std::make_unique<TH1D>("hist", "Number of clusters", unq.size(), 0, 0);
+	for (const auto &v : y){
+		ptr->Fill(v);
+	}
+	return std::move(ptr);
+}
+
+void save_1dhist(std::unique_ptr<TH1D> &hist, std::string x_label, std::string y_label, std::string legend_title, std::string filename){
+	std::unique_ptr<TCanvas> c = std::make_unique<TCanvas>("c", "c", 1);
+	c->cd();
+	std::string title = ";" + x_label + ";" + y_label;
+
+	hist->Draw();
+	hist.release();
+	
+	TLegend *leg = c->BuildLegend();
+	leg->SetHeader(legend_title.c_str(), "C");
+
+	//c->SetTopMargin(0.2);
+	c->SetRightMargin(0.1);
+	c->SetLeftMargin(0.15);
+	c->Update();
+	c->SaveAs(filename.c_str());
+}
 
 double standard_error(std::vector<Double_t> &samples){
 	double mean = 0.0;
