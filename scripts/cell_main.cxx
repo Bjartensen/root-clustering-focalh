@@ -26,7 +26,7 @@ bool focal_h_grid_add_neighbors_all(Grid &g);
 bool calc_neighbors(Grid &g, Cell *c);
 bool calc_neighbors_all(Grid &g);
 std::unique_ptr<TGraphErrors> plot_points(std::vector<std::pair<int, std::vector<double>>> data);
-std::unique_ptr<TH1D> plot_1dhist(std::vector<double> &y);
+std::unique_ptr<TH1D> plot_1dhist(std::vector<double> &y, unsigned int bins = -1);
 bool MA_clustering(std::string folder, double MA_seed_threshold, double MA_aggregation_threshold,
 	std::vector<std::pair<int, std::vector<double>>> &cluster_count,
 	std::vector<std::pair<int, std::vector<double>>> &fraction_of_energy,
@@ -40,43 +40,124 @@ void save_1dhist(std::unique_ptr<TH1D> &hist, std::string x_label, std::string y
 void save_heatmap(Grid &g, std::string filename, std::string title);
 std::vector<std::string> get_files(std::string folder);
 void analysis();
+bool MA_reconstructed_energies(std::string folder, double seed_threshold, double aggregation_threshold);
 
 int main(int argc, char* argv[]){
 
 
 
 
-	/*
-	Grid g;
-	if (!focal_h_grid(g)) return false;
-	if (!focal_h_grid_add_neighbors_all(g)) return false;
-	calc_neighbors_all(g);
+	//Grid g;
+	//if (!focal_h_grid(g)) return false;
+	//if (!focal_h_grid_add_neighbors_all(g)) return false;
+	//calc_neighbors_all(g);
 
 
-	std::string folder = "../data/testbeam/";
-	std::string file = "../data/testbeam/Run_3132_monocluster.root";
-	std::string filename_fig = "../data/testbeam/test.png";
+	//std::string folder = "../data/testbeam/";
+	////std::string file = "../data/testbeam/Run_3132_monocluster.root";
+	//std::string file = "../data/testbeam/201_100_tb.root";
+	//std::string filename_fig = "../data/testbeam/test4.png";
+	//std::string filename_fig = "../data/testbeam/test2.png";
 
 
-	std::unique_ptr<TFile> f = std::make_unique<TFile>(file.c_str(), "READ");
-	auto t = static_cast<TTree*>(f->Get("T"));
+	//std::unique_ptr<TFile> f = std::make_unique<TFile>(file.c_str(), "READ");
+	//auto t = static_cast<TTree*>(f->Get("T"));
 
 
-	fill_grid_ttree_entry(*t, g, 0, true);
-	save_heatmap(g, filename_fig, "adsf");
-	*/
+	//fill_grid_ttree_entry(*t, g, 0, true);
+	//save_heatmap(g, filename_fig, "adsf");
 
 
 
 
+	std::string folder = "../data/focalsim/pi_plus_1000e_deg0/";
+	MA_reconstructed_energies(folder, 800.0, 10);
 	
-	analysis();
+	//analysis();
 
 
 
 
 	return 0;
 }
+
+
+bool MA_reconstructed_energies(std::string folder, double seed_threshold, double aggregation_threshold){
+
+	std::vector<std::string> files = get_files(folder);
+
+	Grid g;
+	if (!focal_h_grid(g)) return false;
+	if (!focal_h_grid_add_neighbors_all(g)) return false;
+	calc_neighbors_all(g);
+
+	std::vector<std::pair<int, std::vector<double>>> cluster_adc_sums_energy;
+	std::vector<std::pair<int, std::vector<double>>> grid_adc_sums_energy;
+
+	for (int i = 0; i < files.size(); i++){
+		std::unique_ptr<TFile> f = std::make_unique<TFile>(files.at(i).c_str(), "READ");
+		auto t = static_cast<TTree*>(f->Get("T"));
+		int energy_temp = static_cast<TParameter<int>*>(f->Get("energy"))->GetVal();
+
+		std::vector<double> cluster_adc_sums;
+		std::vector<double> grid_adc_sums;
+		// For each event
+		for (int e = 0; e < t->GetEntries(); e++){
+
+			fill_grid_ttree_entry(*t, g, e, true);
+
+			ModifiedAggregation ma(&g, seed_threshold, aggregation_threshold);
+			
+			// Any clusters found
+			if (ma.tag()){
+				std::string main_cluster = ma.get_largest_cluster();
+				cluster_adc_sums.push_back(ma.get_cluster_sum(main_cluster));
+
+			// No clusters found
+			}else{
+				cluster_adc_sums.push_back(0.0);
+			}
+			grid_adc_sums.push_back(g.get_grid_sum());
+		}
+
+		cluster_adc_sums_energy.push_back(std::make_pair(energy_temp, cluster_adc_sums));
+		grid_adc_sums_energy.push_back(std::make_pair(energy_temp, grid_adc_sums));
+	}
+
+
+
+	std::unique_ptr<TCanvas> c = std::make_unique<TCanvas>("c", "c", 1);
+	c->cd();
+	for (int i = 0; i < files.size(); i++){
+		std::unique_ptr<TH1D> hist = std::make_unique<TH1D>("hist", "", 100, 0, 150000);
+		for (auto &v : grid_adc_sums_energy.at(i).second)
+			hist->Fill(v);
+		hist->SetTitle(std::to_string(grid_adc_sums_energy.at(i).first).c_str());
+		hist->SetFillColor(0);
+		hist->SetLineColor(i+1);
+		hist->Draw("same");
+		hist.release();
+	}
+
+
+	std::string cluster_hist_filename = "grid_hist.png";
+
+	//std::string title = ";" + x_label + ";" + y_label;
+
+	
+	TLegend *leg = c->BuildLegend();
+	//leg->SetHeader(legend_title.c_str(), "C");
+
+	//c->SetTopMargin(0.2);
+	c->SetRightMargin(0.1);
+	c->SetLeftMargin(0.15);
+	c->Update();
+	c->SaveAs(cluster_hist_filename.c_str());
+
+
+	return true;
+}
+
 
 void analysis(){
 	std::vector<std::pair<double, double>> MA_params;
@@ -94,14 +175,15 @@ void analysis(){
 	//MA_params.push_back(std::make_pair(800, 400));
 	//MA_params.push_back(std::make_pair(800, 500));
 
+	std::string folder = "../data/focalsim/pi_plus_1000e_deg0/";
 	//std::string folder = "../data/focalsim/pi_plus_100e_deg0/";
-	std::string folder = "../data/focalsim/pi_plus_100e_deg0/";
 	//std::string folder = "../data/focalsim/pi_plus_deg0/";
 
 	std::vector<std::unique_ptr<TGraphErrors>> cluster_count_points_vec;
 	std::vector<std::unique_ptr<TGraphErrors>> fraction_of_energy_points_vec;
 	std::vector<std::unique_ptr<TGraphErrors>> leftover_max_adc_points_vec;
 	std::vector<std::unique_ptr<TH1D>> cluster_count_hist_vec;
+	std::vector<std::unique_ptr<TH1D>> cluster_center_of_mass_hist_vec;
 
 	for (int i = 0; i < MA_params.size(); i++){
 		std::vector<std::pair<int, std::vector<double>>> cluster_count;
@@ -152,13 +234,30 @@ void analysis(){
 			cluster_count_hist_vec.push_back(std::move(cluster_count_hist));
 		}
 
-		for (const auto &v : cluster_center_of_mass){
-			for (const auto &c : v.second){
-				for (const auto &e : c)
-					std::cout << "x:" << e.first << ",y:" << e.second;
-				std::cout << std::endl;
+
+
+		std::vector<double> two_cluster_center_of_mass_distance;
+		for (const auto &f : cluster_center_of_mass){ // file/energy
+			for (const auto &e : f.second){ // event
+				if (e.size() == 2){
+					double x_dist = e.at(0).first - e.at(1).first;
+					double y_dist = e.at(0).second - e.at(1).second;
+					two_cluster_center_of_mass_distance.push_back(std::sqrt(std::pow(x_dist,2) + std::pow(y_dist,2)));
+				}
 			}
 		}
+
+		std::unique_ptr<TH1D> cluster_center_of_mass_hist = plot_1dhist(two_cluster_center_of_mass_distance, 21);
+		cluster_center_of_mass_hist->SetDefaultBufferSize();
+		cluster_center_of_mass_hist->SetFillColor(kBlue-5);
+		std::string temp_filename = "com_test";//std::to_string(int(cluster_count.at(i).first));
+		std::string temp_title = "Center of mass when 2 clusters;Distance [cm];Events";
+		cluster_center_of_mass_hist->SetTitle(temp_title.c_str());
+		cluster_center_of_mass_hist_vec.push_back(std::move(cluster_center_of_mass_hist));
+
+
+
+
 
 	}
 
@@ -177,6 +276,13 @@ void analysis(){
 		save_1dhist(cluster_count_hist_vec.at(i), "Count", "Clusters", "Clusters", cluster_count_hist_filename);
 	}
 
+	for (int i = 0; i < cluster_center_of_mass_hist_vec.size(); i++){
+		std::string temp_extension = cluster_center_of_mass_hist_vec.at(i)->GetTitle();
+		std::string cluster_center_of_mass_hist_filename = folder + "CoM_" + temp_extension + ANALYSIS_TAG + IMAGE_EXTENSION;
+		save_1dhist(cluster_center_of_mass_hist_vec.at(i), "Distance", "Events", "Center of mass", cluster_center_of_mass_hist_filename);
+	}
+
+
 }
 
 
@@ -186,9 +292,6 @@ bool MA_clustering(std::string folder, double MA_seed_threshold, double MA_aggre
 	std::vector<std::pair<int, std::vector<double>>> &leftover_max_adc,
 	std::vector<std::pair<int, std::vector<std::vector<std::pair<double, double>>>>> &cluster_center_of_mass
 ){
-
-	// REWORK
-	// Change returning data to vector<pair<energy, data>>
 
 	std::vector<std::string> files = get_files(folder);
 	//files.push_back("250_1_analysis.root");
@@ -351,13 +454,13 @@ bool fill_grid_ttree_entry(TTree& t, Grid& g, int e, bool override_values){
 	std::vector<Double_t>* x_pos = nullptr;
 	std::vector<Double_t>* y_pos = nullptr;
 	std::vector<Double_t>* value = nullptr;
-	std::vector<Double_t>* particle = nullptr;
+	//std::vector<Double_t>* particle = nullptr;
 
 
 	t.SetBranchAddress("x_pos", &x_pos);
 	t.SetBranchAddress("y_pos", &y_pos);
 	t.SetBranchAddress("value", &value);
-	t.SetBranchAddress("particle", &particle);
+	//t.SetBranchAddress("particle", &particle);
 
 	t.GetEntry(e);
 
@@ -498,16 +601,21 @@ std::unique_ptr<TGraphErrors> plot_points(std::vector<std::pair<int, std::vector
 	return std::move(graph);
 }
 
-std::unique_ptr<TH1D> plot_1dhist(std::vector<double> &y){
+std::unique_ptr<TH1D> plot_1dhist(std::vector<double> &y, unsigned int bins){
 	std::set<double> unq;
 	for (const auto &v : y)
 		unq.insert(v);
-	std::unique_ptr<TH1D> ptr = std::make_unique<TH1D>("hist", "Number of clusters", unq.size(), 0, 0);
+
+	if (bins == -1)
+		bins = unq.size();
+
+	std::unique_ptr<TH1D> ptr = std::make_unique<TH1D>("hist", "Number of clusters", bins, 0, 0);
 	for (const auto &v : y){
 		ptr->Fill(v);
 	}
 	return std::move(ptr);
 }
+
 
 void save_1dhist(std::unique_ptr<TH1D> &hist, std::string x_label, std::string y_label, std::string legend_title, std::string filename){
 	std::unique_ptr<TCanvas> c = std::make_unique<TCanvas>("c", "c", 1);

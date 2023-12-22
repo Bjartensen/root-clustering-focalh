@@ -26,10 +26,12 @@ add_library(clustering_util SHARED
 	src/grid.cxx
 	src/clustering.cxx
 	src/modified_aggregation.cxx
+	src/focal_coordinates.cxx
 	include/cell.h
 	include/grid.h
 	include/clustering.h
 	include/modified_aggregation.h
+	include/focal_coordinates.h
 )
 
 target_link_libraries(clustering_util PUBLIC 
@@ -51,9 +53,11 @@ target_link_libraries(clustering_util PUBLIC
 add_executable(extract_digits_main                  ./scripts/extract_digits.cxx)
 add_executable(hist									./scripts/hist.cxx)
 add_executable(cell_main									./scripts/cell_main.cxx)
+add_executable(testbeam_reconstruct									./scripts/testbeam_reconstruct.cxx)
 
 target_link_libraries(extract_digits_main                     clustering_util)
 target_link_libraries(hist                     clustering_util)
 target_link_libraries(cell_main                     clustering_util)
+target_link_libraries(testbeam_reconstruct                     clustering_util)
 
 #ROOT_GENERATE_DICTIONARY(myapp_dict myapp.h MODULE myapp LINKDEF LinkDef.h)

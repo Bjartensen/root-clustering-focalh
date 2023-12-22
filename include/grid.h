@@ -27,6 +27,7 @@ public:
 	// something that fills
 	bool Fill(double _x, double _y, double _val);
 	bool SetCellValues(double _x, double _y, double _val);
+	double get_grid_sum();
 
 	// TH2Poly plotting
 	std::unique_ptr<TH2Poly> plot_grid();

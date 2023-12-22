@@ -120,3 +120,12 @@ bool Grid::Fill(double _x, double _y, double _val){
 		}
 	return false;
 }
+
+
+double Grid::get_grid_sum(){
+	double sum = 0;
+	for (const auto &v : cells){
+		sum += v->get_value();
+	}
+	return sum;
+}
