@@ -71,6 +71,7 @@ int main(int argc, char* argv[]){
 
 
 	std::string folder = "../data/focalsim/pi_plus_1000e_deg0/";
+	//std::string folder = "../data/focalsim/pi_plus_100e_deg0/";
 	MA_reconstructed_energies(folder, 800.0, 10);
 	
 	//analysis();
@@ -136,6 +137,7 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 		hist->SetFillColor(0);
 		hist->SetLineColor(i+1);
 		hist->Draw("same");
+		hist->Fit("gaus");
 		hist.release();
 	}
 
