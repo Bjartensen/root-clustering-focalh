@@ -12,6 +12,7 @@
 #include <TLegend.h>
 #include <filesystem>
 #include <regex>
+#include <TF1.h>
 
 const double SATURATION_VALUE = 4095;
 //const double SATURATION_VALUE = 12000;
@@ -70,8 +71,8 @@ int main(int argc, char* argv[]){
 
 
 
-	std::string folder = "../data/focalsim/pi_plus_1000e_deg0/";
-	//std::string folder = "../data/focalsim/pi_plus_100e_deg0/";
+	//std::string folder = "../data/focalsim/pi_plus_1000e_deg0/";
+	std::string folder = "../data/focalsim/pi_plus_100e_deg0/";
 	MA_reconstructed_energies(folder, 800.0, 10);
 	
 	//analysis();
@@ -127,38 +128,89 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 
 
 
-	std::unique_ptr<TCanvas> c = std::make_unique<TCanvas>("c", "c", 1);
-	c->cd();
+	std::vector<std::tuple<double, double>> grid_fits;
+	std::vector<std::tuple<double, double>> cluster_fits;
+
+
+	// Grid fits and plots
+	std::unique_ptr<TCanvas> grid_canvas = std::make_unique<TCanvas>("c", "c", 1);
+	grid_canvas->cd();
 	for (int i = 0; i < files.size(); i++){
-		std::unique_ptr<TH1D> hist = std::make_unique<TH1D>("hist", "", 100, 0, 150000);
+		std::cout << std::to_string(grid_adc_sums_energy.at(i).first) << std::endl;
+		//std::unique_ptr<TH1D> hist = std::make_unique<TH1D>("hist", "", 100, 0, 150000);
+		std::unique_ptr<TH1D> hist = std::make_unique<TH1D>("hist", "", 50, 0, 150000);
+		std::unique_ptr<TF1> fit = std::make_unique<TF1>("fit", "gaus");
 		for (auto &v : grid_adc_sums_energy.at(i).second)
 			hist->Fill(v);
+		fit->SetParameter(0, hist->GetMaximum());
+		fit->SetParameter(1, hist->GetMean());
+		fit->SetParameter(2, hist->GetRMS());
+		std::cout << "Max: " << hist->GetMaximum() << " at: " << hist->GetXaxis()->GetBinCenter(hist->GetMaximumBin()) << std::endl;
 		hist->SetTitle(std::to_string(grid_adc_sums_energy.at(i).first).c_str());
 		hist->SetFillColor(0);
 		hist->SetLineColor(i+1);
+		hist->SetStats(0);
 		hist->Draw("same");
-		hist->Fit("gaus");
+		hist->Fit("fit", "0");
+		grid_fits.push_back(std::make_tuple(fit->GetParameter(1), fit->GetParError(1)));
+		hist.release();
+	}
+
+	std::string grid_hist_filename = "grid_hist.png";
+	//std::string title = ";" + x_label + ";" + y_label;
+
+	
+	TLegend *leg = grid_canvas->BuildLegend();
+	//leg->SetHeader(legend_title.c_str(), "C");
+
+	//c->SetTopMargin(0.2);
+	grid_canvas->SetRightMargin(0.1);
+	grid_canvas->SetLeftMargin(0.15);
+	grid_canvas->Update();
+	grid_canvas->SaveAs(grid_hist_filename.c_str());
+
+
+	// Cluster fits and plots
+	for (int i = 0; i < files.size(); i++){
+		std::cout << std::to_string(cluster_adc_sums_energy.at(i).first) << std::endl;
+		//std::unique_ptr<TH1D> hist = std::make_unique<TH1D>("hist", "", 100, 0, 150000);
+		std::unique_ptr<TH1D> hist = std::make_unique<TH1D>("hist", "", 50, 0, 150000);
+		std::unique_ptr<TF1> fit = std::make_unique<TF1>("fit", "gaus");
+		for (auto &v : cluster_adc_sums_energy.at(i).second)
+			hist->Fill(v);
+		fit->SetParameter(0, hist->GetMaximum());
+		fit->SetParameter(1, hist->GetMean());
+		fit->SetParameter(2, hist->GetRMS());
+		std::cout << "Max: " << hist->GetMaximum() << " at: " << hist->GetXaxis()->GetBinCenter(hist->GetMaximumBin()) << std::endl;
+		hist->SetTitle(std::to_string(cluster_adc_sums_energy.at(i).first).c_str());
+		hist->SetFillColor(0);
+		hist->SetLineColor(i+1);
+		hist->SetStats(0);
+		hist->Draw("same");
+		hist->Fit("fit", "0");
+		cluster_fits.push_back(std::make_tuple(fit->GetParameter(1), fit->GetParError(1)));
 		hist.release();
 	}
 
 
-	std::string cluster_hist_filename = "grid_hist.png";
+	for (auto &v : grid_fits){
+		std::cout << std::get<0>(v) << ",";
+	}
+	std::cout << std::endl;
 
-	//std::string title = ";" + x_label + ";" + y_label;
+	for (auto &v : cluster_fits){
+		std::cout << std::get<0>(v) << ",";
+	}
+	std::cout << std::endl;
 
-	
-	TLegend *leg = c->BuildLegend();
-	//leg->SetHeader(legend_title.c_str(), "C");
 
-	//c->SetTopMargin(0.2);
-	c->SetRightMargin(0.1);
-	c->SetLeftMargin(0.15);
-	c->Update();
-	c->SaveAs(cluster_hist_filename.c_str());
 
 
 	return true;
 }
+
+
+
 
 
 void analysis(){
