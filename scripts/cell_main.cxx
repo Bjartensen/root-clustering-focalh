@@ -71,8 +71,8 @@ int main(int argc, char* argv[]){
 
 
 
-	//std::string folder = "../data/focalsim/pi_plus_1000e_deg0/";
-	std::string folder = "../data/focalsim/pi_plus_100e_deg0/";
+	std::string folder = "../data/focalsim/pi_plus_1000e_deg0/";
+	//std::string folder = "../data/focalsim/pi_plus_100e_deg0/";
 	MA_reconstructed_energies(folder, 800.0, 10);
 	
 	//analysis();
@@ -128,8 +128,8 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 
 
 
-	std::vector<std::tuple<double, double>> grid_fits;
-	std::vector<std::tuple<double, double>> cluster_fits;
+	std::vector<std::tuple<int, double, double>> grid_fits;
+	std::vector<std::tuple<int, double, double>> cluster_fits;
 
 
 	// Grid fits and plots
@@ -151,8 +151,8 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 		hist->SetLineColor(i+1);
 		hist->SetStats(0);
 		hist->Draw("same");
-		hist->Fit("fit", "0");
-		grid_fits.push_back(std::make_tuple(fit->GetParameter(1), fit->GetParError(1)));
+		hist->Fit("fit", "Q0");
+		grid_fits.push_back(std::make_tuple(grid_adc_sums_energy.at(i).first, fit->GetParameter(1), fit->GetParError(1)));
 		hist.release();
 	}
 
@@ -187,10 +187,51 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 		hist->SetLineColor(i+1);
 		hist->SetStats(0);
 		hist->Draw("same");
-		hist->Fit("fit", "0");
-		cluster_fits.push_back(std::make_tuple(fit->GetParameter(1), fit->GetParError(1)));
+		hist->Fit("fit", "Q0");
+		cluster_fits.push_back(std::make_tuple(cluster_adc_sums_energy.at(i).first, fit->GetParameter(1), fit->GetParError(1)));
 		hist.release();
 	}
+
+
+
+
+	std::vector<std::unique_ptr<TGraphErrors>> lin_plots;
+	std::unique_ptr<TGraphErrors> grid_points = std::make_unique<TGraphErrors>();
+	std::unique_ptr<TGraphErrors> cluster_points = std::make_unique<TGraphErrors>();
+	grid_points->SetName("Grid points");
+	grid_points->SetMarkerStyle(21);
+	grid_points->SetMarkerColor(kBlue);
+	cluster_points->SetName("Cluster points");
+	cluster_points->SetMarkerStyle(22);
+	cluster_points->SetMarkerColor(kRed);
+
+	for (int i = 0; i < grid_fits.size(); i++){
+		grid_points->SetPoint(i, std::get<0>(grid_fits.at(i)), std::get<1>(grid_fits.at(i)));
+		grid_points->SetPointError(i, 0, std::get<2>(grid_fits.at(i)));
+
+		cluster_points->SetPoint(i, std::get<0>(cluster_fits.at(i)), std::get<1>(cluster_fits.at(i)));
+		cluster_points->SetPointError(i, 0, std::get<2>(cluster_fits.at(i)));
+
+		//grid_points->SetMinimum(0);
+		//cluster_points->SetMinimum(0);
+	}
+
+	std::unique_ptr<TF1> grid_lin_fit = std::make_unique<TF1>("grid_lin_fit", "pol1", 0, 400);
+	std::unique_ptr<TF1> cluster_lin_fit = std::make_unique<TF1>("cluster_lin_fit", "pol1", 0, 400);
+	grid_lin_fit->SetLineColor(kBlue);
+	grid_lin_fit->SetLineStyle(2);
+	cluster_lin_fit->SetLineColor(kRed);
+	cluster_lin_fit->SetLineStyle(2);
+	grid_points->Fit("grid_lin_fit", "R");
+	cluster_points->Fit("cluster_lin_fit", "R");
+	lin_plots.push_back(std::move(cluster_points));
+	lin_plots.push_back(std::move(grid_points));
+	std::string lin_plot_x_label = "Energy [GeV]";
+	std::string lin_plot_y_label = "ADC Counts";
+	std::string lin_plot_legend_title = "Linearization";
+	std::string lin_plot_filename = "lin_plot" + IMAGE_EXTENSION;
+	save_point_plot(lin_plots, lin_plot_x_label, lin_plot_y_label, lin_plot_legend_title, lin_plot_filename);
+
 
 
 	for (auto &v : grid_fits){
@@ -614,7 +655,7 @@ void save_heatmap(Grid &g, std::string filename, std::string title){
 
 void save_point_plot(std::vector<std::unique_ptr<TGraphErrors>> &point_plots, std::string x_label, std::string y_label, std::string legend_title, std::string filename){
 
-	std::unique_ptr<TCanvas> c = std::make_unique<TCanvas>("c", "c", 1);
+	std::unique_ptr<TCanvas> c = std::make_unique<TCanvas>("save_point_plot", "save_point_plot", 1);
 	std::unique_ptr<TMultiGraph> multi = std::make_unique<TMultiGraph>();
 	c->cd();
 
@@ -625,6 +666,8 @@ void save_point_plot(std::vector<std::unique_ptr<TGraphErrors>> &point_plots, st
 	std::string title = ";" + x_label + ";" + y_label;
 	multi->SetTitle(title.c_str());
 	multi->Draw("AP");
+	multi->SetMinimum(0);
+	multi->GetXaxis()->SetLimits(0, 400);
 	
 	
 	TLegend *leg = c->BuildLegend();
@@ -654,6 +697,8 @@ std::unique_ptr<TGraphErrors> plot_points(std::vector<std::pair<int, std::vector
 
 	return std::move(graph);
 }
+
+
 
 std::unique_ptr<TH1D> plot_1dhist(std::vector<double> &y, unsigned int bins){
 	std::set<double> unq;
