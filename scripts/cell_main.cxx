@@ -54,25 +54,29 @@ int main(int argc, char* argv[]){
 	//calc_neighbors_all(g);
 
 
-	//std::string folder = "../data/testbeam/";
-	////std::string file = "../data/testbeam/Run_3132_monocluster.root";
-	//std::string file = "../data/testbeam/201_100_tb.root";
-	//std::string filename_fig = "../data/testbeam/test4.png";
-	//std::string filename_fig = "../data/testbeam/test2.png";
+	////std::string folder = "../data/testbeam/";
+	//std::string file = "../data/testbeam/Run_3207_monocluster.root";
+	////std::string file = "../data/tstbeam/201_100_tb.root";
+	////std::string filename_fig = "../data/testbeam/OLD.png";
+	//std::string filename_fig = "../data/testbeam/NEW.png";
 
 
 	//std::unique_ptr<TFile> f = std::make_unique<TFile>(file.c_str(), "READ");
 	//auto t = static_cast<TTree*>(f->Get("T"));
 
 
-	//fill_grid_ttree_entry(*t, g, 0, true);
-	//save_heatmap(g, filename_fig, "adsf");
+	//for (int i = 1000; i < 1010; i++){
+	//	fill_grid_ttree_entry(*t, g, i, true);
+	//	std::string temp_filename_fig = "../data/testbeam/NEW" + std::to_string(i) + ".png";
+	//	save_heatmap(g, temp_filename_fig, "NEW" + std::to_string(i));
+	//}
 
 
 
 
-	std::string folder = "../data/focalsim/pi_plus_1000e_deg0/";
+	//std::string folder = "../data/focalsim/pi_plus_1000e_deg0/";
 	//std::string folder = "../data/focalsim/pi_plus_100e_deg0/";
+	std::string folder = "../data/testbeam/";
 	MA_reconstructed_energies(folder, 800.0, 10);
 	
 	//analysis();
@@ -133,12 +137,12 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 
 
 	// Grid fits and plots
-	std::unique_ptr<TCanvas> grid_canvas = std::make_unique<TCanvas>("c", "c", 1);
+	std::unique_ptr<TCanvas> grid_canvas = std::make_unique<TCanvas>("grid", "grid", 1);
 	grid_canvas->cd();
 	for (int i = 0; i < files.size(); i++){
 		std::cout << std::to_string(grid_adc_sums_energy.at(i).first) << std::endl;
 		//std::unique_ptr<TH1D> hist = std::make_unique<TH1D>("hist", "", 100, 0, 150000);
-		std::unique_ptr<TH1D> hist = std::make_unique<TH1D>("hist", "", 50, 0, 150000);
+		std::unique_ptr<TH1D> hist = std::make_unique<TH1D>("hist", "", 200, 0, 290000);
 		std::unique_ptr<TF1> fit = std::make_unique<TF1>("fit", "gaus");
 		for (auto &v : grid_adc_sums_energy.at(i).second)
 			hist->Fill(v);
@@ -160,7 +164,7 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 	//std::string title = ";" + x_label + ";" + y_label;
 
 	
-	TLegend *leg = grid_canvas->BuildLegend();
+	TLegend *grid_leg = grid_canvas->BuildLegend();
 	//leg->SetHeader(legend_title.c_str(), "C");
 
 	//c->SetTopMargin(0.2);
@@ -171,10 +175,12 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 
 
 	// Cluster fits and plots
+	std::unique_ptr<TCanvas> cluster_canvas = std::make_unique<TCanvas>("cluster", "cluster", 1);
+	cluster_canvas->cd();
 	for (int i = 0; i < files.size(); i++){
 		std::cout << std::to_string(cluster_adc_sums_energy.at(i).first) << std::endl;
 		//std::unique_ptr<TH1D> hist = std::make_unique<TH1D>("hist", "", 100, 0, 150000);
-		std::unique_ptr<TH1D> hist = std::make_unique<TH1D>("hist", "", 50, 0, 150000);
+		std::unique_ptr<TH1D> hist = std::make_unique<TH1D>("hist", "", 200, 0, 290000);
 		std::unique_ptr<TF1> fit = std::make_unique<TF1>("fit", "gaus");
 		for (auto &v : cluster_adc_sums_energy.at(i).second)
 			hist->Fill(v);
@@ -192,16 +198,28 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 		hist.release();
 	}
 
+	std::string cluster_hist_filename = "cluster_hist.png";
+	//std::string title = ";" + x_label + ";" + y_label;
+
+	
+	TLegend *cluster_leg = cluster_canvas->BuildLegend();
+	//leg->SetHeader(legend_title.c_str(), "C");
+
+	//c->SetTopMargin(0.2);
+	cluster_canvas->SetRightMargin(0.1);
+	cluster_canvas->SetLeftMargin(0.15);
+	cluster_canvas->Update();
+	cluster_canvas->SaveAs(cluster_hist_filename.c_str());
 
 
 
 	std::vector<std::unique_ptr<TGraphErrors>> lin_plots;
 	std::unique_ptr<TGraphErrors> grid_points = std::make_unique<TGraphErrors>();
 	std::unique_ptr<TGraphErrors> cluster_points = std::make_unique<TGraphErrors>();
-	grid_points->SetName("Grid points");
+	grid_points->SetName("Total ADC");
 	grid_points->SetMarkerStyle(21);
 	grid_points->SetMarkerColor(kBlue);
-	cluster_points->SetName("Cluster points");
+	cluster_points->SetName("Dominant cluster");
 	cluster_points->SetMarkerStyle(22);
 	cluster_points->SetMarkerColor(kRed);
 
@@ -753,7 +771,7 @@ double standard_error(std::vector<Double_t> &samples){
 
 std::vector<std::string> get_files(std::string folder){
 	std::vector<std::string> files;
-    std::regex reg("analysis.root$",
+    std::regex reg(".root$",
             std::regex_constants::ECMAScript | std::regex_constants::icase);
 
     for (const auto & entry : std::filesystem::directory_iterator(folder))
