@@ -1,8 +1,9 @@
-# Project needs a lot of clean up
+# ROOT-based discrete clustering for the FoCal-H Calorimeter
+
+# Project needs some clean up
 
 ## TO-DO
 
-* Separate some of the clustering header and implementation files
 * Generalize the cells to polygonal coordinates (requires new hit function) and geometry setup
 
 

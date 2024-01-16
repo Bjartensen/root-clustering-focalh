@@ -58,6 +58,10 @@ std::unique_ptr<TH2Poly> Grid::plot_grid(){
 
 	}
 
+	//ptr->GetXaxis()->SetTitle("x [cm]");
+	//ptr->GetYaxis()->SetTitle("y [cm]");
+	//ptr->SetStats(0);
+	//ptr->SetOptTitle("adsf");
 	return std::move(ptr);
 }
 
@@ -96,6 +100,8 @@ std::unique_ptr<TH2Poly> Grid::plot_cell_neighbors(Cell* c){
 
 	}
 
+	//ptr->GetXaxis()->SetTitle("x [cm]");
+	//ptr->GetYaxis()->SetTitle("y [cm]");
 	ptr->Fill(c->get_x_position(), c->get_y_position(), 1);
 	for (auto n : *c->get_neighbors())
 		ptr->Fill(n->get_x_position(), n->get_y_position(), 2);

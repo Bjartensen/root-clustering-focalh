@@ -13,11 +13,12 @@
 #include <filesystem>
 #include <regex>
 #include <TF1.h>
+#include <THStack.h>
 
 const double SATURATION_VALUE = 4095;
-//const double SATURATION_VALUE = 12000;
-const std::string IMAGE_EXTENSION = ".png";
-//const std::string IMAGE_EXTENSION = ".pdf";
+//const double SATURATION_VALUE = 32000;
+//const std::string IMAGE_EXTENSION = ".png";
+const std::string IMAGE_EXTENSION = ".pdf";
 std::string ANALYSIS_TAG = "";
 
 bool focal_h_grid(Grid& g);
@@ -39,8 +40,9 @@ double standard_error(std::vector<double> &samples);
 void save_point_plot(std::vector<std::unique_ptr<TGraphErrors>> &point_plots, std::string x_label, std::string y_label, std::string legend_title, std::string filename);
 void save_1dhist(std::unique_ptr<TH1D> &hist, std::string x_label, std::string y_label, std::string legend_title, std::string filename);
 void save_heatmap(Grid &g, std::string filename, std::string title);
+void save_neighborhood(Grid &g, Cell* cell, std::string filename, std::string title);
 std::vector<std::string> get_files(std::string folder);
-void analysis();
+void analysis(std::string folder);
 bool MA_reconstructed_energies(std::string folder, double seed_threshold, double aggregation_threshold);
 
 int main(int argc, char* argv[]){
@@ -48,38 +50,50 @@ int main(int argc, char* argv[]){
 
 
 
-	//Grid g;
-	//if (!focal_h_grid(g)) return false;
-	//if (!focal_h_grid_add_neighbors_all(g)) return false;
-	//calc_neighbors_all(g);
+	Grid g;
+	if (!focal_h_grid(g)) return false;
+	if (!focal_h_grid_add_neighbors_all(g)) return false;
+	calc_neighbors_all(g);
 
 
-	////std::string folder = "../data/testbeam/";
-	//std::string file = "../data/testbeam/Run_3207_monocluster.root";
-	////std::string file = "../data/tstbeam/201_100_tb.root";
-	////std::string filename_fig = "../data/testbeam/OLD.png";
+	//std::string folder = "../data/testbeam/";
+	//std::string file = "../data/testbeam/Run_3225_monocluster.root";
+	//std::string file = "../data/focalsim/pi_plus_10000e_deg0/250_10000_small.root";
+	std::string file = "../data/focalsim/misc/250_1_analysis.root";
+	//std::string file = "../data/tstbeam/201_100_tb.root";
+	//std::string filename_fig = "../data/testbeam/OLD.png";
 	//std::string filename_fig = "../data/testbeam/NEW.png";
 
 
-	//std::unique_ptr<TFile> f = std::make_unique<TFile>(file.c_str(), "READ");
-	//auto t = static_cast<TTree*>(f->Get("T"));
+	std::unique_ptr<TFile> f = std::make_unique<TFile>(file.c_str(), "READ");
+	auto t = static_cast<TTree*>(f->Get("T"));
 
 
-	//for (int i = 1000; i < 1010; i++){
-	//	fill_grid_ttree_entry(*t, g, i, true);
-	//	std::string temp_filename_fig = "../data/testbeam/NEW" + std::to_string(i) + ".png";
-	//	save_heatmap(g, temp_filename_fig, "NEW" + std::to_string(i));
+	for (int i = 0; i < 1; i++){
+		fill_grid_ttree_entry(*t, g, i, true);
+		std::string temp_filename_fig = "../data/focalsim/misc/NEW" + std::to_string(i) + IMAGE_EXTENSION;
+		save_heatmap(g, temp_filename_fig, "250 GeV, two pi+");
+	}
+
+
+	//for (const auto &v : *g.get_cells()){
+	//	std::string temp_filename_fig = "../data/testbeam/neighboords" + v->get_id() + IMAGE_EXTENSION;
+	//	save_neighborhood(g, v.get(), temp_filename_fig, "");
+	//	std::cout << v->get_id() << ",";
 	//}
+	//std::cout << std::endl;
 
 
 
-
+	//std::string folder = "../data/focalsim/pi_plus_10000e_deg0/";
 	//std::string folder = "../data/focalsim/pi_plus_1000e_deg0/";
 	//std::string folder = "../data/focalsim/pi_plus_100e_deg0/";
 	std::string folder = "../data/testbeam/";
-	MA_reconstructed_energies(folder, 800.0, 10);
-	
-	//analysis();
+
+
+
+	//MA_reconstructed_energies(folder, 800.0, 10);
+	//analysis(folder);
 
 
 
@@ -90,7 +104,70 @@ int main(int argc, char* argv[]){
 
 bool MA_reconstructed_energies(std::string folder, double seed_threshold, double aggregation_threshold){
 
+	std::cout << "Plotting histograms, fitting gaussians and linearization..." << std::endl;
+
 	std::vector<std::string> files = get_files(folder);
+
+
+	bool sim = false;
+	std::string lin_plot_legend_title;
+	std::string leftover_lin_plot_legend_title;
+	std::string mc_tb_affix;
+	std::string lin_plot_filename;
+	std::string leftover_lin_plot_filename;
+	int grid_hist_max;
+	int cluster_hist_max;
+	int leftover_grid_hist_max;
+	int grid_bins;
+	int cluster_bins;
+	int leftover_grid_bins;
+	int grid_xmax;
+	int cluster_xmax;
+	int leftover_grid_xmax;
+	if (!sim){ // tb, 10000 events
+		lin_plot_legend_title = "Testbeam SEP2023 linearization, hadrons"; // tb
+		leftover_lin_plot_legend_title = "Testbeam SEP2023 linearization, hadrons"; // tb
+		mc_tb_affix = "tb"; //tb
+		lin_plot_filename = folder + mc_tb_affix + "_lin_plot_" + IMAGE_EXTENSION;
+		leftover_lin_plot_filename = folder + mc_tb_affix + "_leftover_lin_plot_" + IMAGE_EXTENSION;
+		grid_hist_max = 300; // tb
+		cluster_hist_max = 700; // tb
+		leftover_grid_hist_max = 300;
+		grid_bins = 300; // tb
+		cluster_bins = 300; // tb
+		leftover_grid_bins = 300;
+		grid_xmax = 290000; // tb
+		cluster_xmax = 200000; // tb
+		leftover_grid_xmax = 200000;
+
+	//}else{ // sim, 1000 events
+	//	lin_plot_legend_title = "Monte Carlo linearization, pions"; // tb
+	//	mc_tb_affix = "mc"; //tb
+	//	lin_plot_filename = "lin_plot_" + mc_tb_affix + IMAGE_EXTENSION;
+	//	grid_hist_max = 100; // tb
+	//	cluster_hist_max = 70; // tb
+	//	grid_bins = 250; // tb
+	//	cluster_bins = 250; // tb
+	//	grid_xmax = 150000; // tb
+	//	cluster_xmax = 130000; // tb
+	//}
+
+	}else{ // sim, 1000 events
+		lin_plot_legend_title = "Monte Carlo linearization, pions"; // tb
+		leftover_lin_plot_legend_title = "Monte Carlo linearization, pions"; // tb
+		mc_tb_affix = "mc"; //tb
+		lin_plot_filename = folder + mc_tb_affix + "_lin_plot_"  + IMAGE_EXTENSION;
+		leftover_lin_plot_filename = folder + mc_tb_affix + "_leftover_lin_plot_"  + IMAGE_EXTENSION;
+		grid_hist_max = 800; // tb
+		cluster_hist_max = 450; // tb
+		leftover_grid_hist_max = 800;
+		grid_bins = 250; // tb
+		cluster_bins = 200; // tb
+		leftover_grid_bins = 250;
+		grid_xmax = 150000; // tb
+		cluster_xmax = 130000; // tb
+		leftover_grid_xmax = 150000;
+	}
 
 	Grid g;
 	if (!focal_h_grid(g)) return false;
@@ -98,15 +175,22 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 	calc_neighbors_all(g);
 
 	std::vector<std::pair<int, std::vector<double>>> cluster_adc_sums_energy;
+	std::vector<std::pair<int, std::vector<double>>> second_cluster_adc_sums_energy;
+
+	// Add another vector for second largest cluster (if exists) to test for linearization
 	std::vector<std::pair<int, std::vector<double>>> grid_adc_sums_energy;
+	std::vector<std::pair<int, std::vector<double>>> leftover_grid_adc_sums_energy;
 
 	for (int i = 0; i < files.size(); i++){
 		std::unique_ptr<TFile> f = std::make_unique<TFile>(files.at(i).c_str(), "READ");
+		std::cout << "Opening file: " << files.at(i) << std::endl;
 		auto t = static_cast<TTree*>(f->Get("T"));
 		int energy_temp = static_cast<TParameter<int>*>(f->Get("energy"))->GetVal();
 
 		std::vector<double> cluster_adc_sums;
+		std::vector<double> second_cluster_adc_sums;
 		std::vector<double> grid_adc_sums;
+		std::vector<double> leftover_grid_adc_sums;
 		// For each event
 		for (int e = 0; e < t->GetEntries(); e++){
 
@@ -118,31 +202,56 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 			if (ma.tag()){
 				std::string main_cluster = ma.get_largest_cluster();
 				cluster_adc_sums.push_back(ma.get_cluster_sum(main_cluster));
+				leftover_grid_adc_sums.push_back(g.get_grid_sum() - ma.get_cluster_sum(main_cluster));
+
+
+				//main_cluster_vec.push_back(main_cluster);
+				//std::vector<std::string> remaining_clusters = ma.get_remaining_clusters(main_cluster_vec);
+				//if (remaining_clusters.size() > 0){
+				//	std::string max = remaining_clusters.at(0);
+				//	for (auto &v : remaining_clusters){
+				//		if (ma.get_cluster_max_adc(v) > ma.get_cluster_max_adc(max))
+				//			max = v;
+				//	}
+				//	leftover_max_adc_temp.push_back(ma.get_cluster_max_adc(max));
+				//}else{
+				//	leftover_max_adc_temp.push_back(0);
+				//}
+
+
 
 			// No clusters found
 			}else{
 				cluster_adc_sums.push_back(0.0);
+				leftover_grid_adc_sums.push_back(g.get_grid_sum());
 			}
 			grid_adc_sums.push_back(g.get_grid_sum());
 		}
 
 		cluster_adc_sums_energy.push_back(std::make_pair(energy_temp, cluster_adc_sums));
 		grid_adc_sums_energy.push_back(std::make_pair(energy_temp, grid_adc_sums));
+		leftover_grid_adc_sums_energy.push_back(std::make_pair(energy_temp, leftover_grid_adc_sums));
 	}
 
 
 
 	std::vector<std::tuple<int, double, double>> grid_fits;
 	std::vector<std::tuple<int, double, double>> cluster_fits;
+	std::vector<std::tuple<int, double, double>> leftover_grid_fits;
+
+	int grid_max = 0;
 
 
-	// Grid fits and plots
+	std::unique_ptr<THStack> grid_stack = std::make_unique<THStack>("grid_stack", "");
+
+	// GRID HISTOGRAMS 
+
 	std::unique_ptr<TCanvas> grid_canvas = std::make_unique<TCanvas>("grid", "grid", 1);
 	grid_canvas->cd();
 	for (int i = 0; i < files.size(); i++){
 		std::cout << std::to_string(grid_adc_sums_energy.at(i).first) << std::endl;
 		//std::unique_ptr<TH1D> hist = std::make_unique<TH1D>("hist", "", 100, 0, 150000);
-		std::unique_ptr<TH1D> hist = std::make_unique<TH1D>("hist", "", 200, 0, 290000);
+		std::unique_ptr<TH1D> hist = std::make_unique<TH1D>("hist", "", grid_bins, 0, grid_xmax);
 		std::unique_ptr<TF1> fit = std::make_unique<TF1>("fit", "gaus");
 		for (auto &v : grid_adc_sums_energy.at(i).second)
 			hist->Fill(v);
@@ -150,37 +259,59 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 		fit->SetParameter(1, hist->GetMean());
 		fit->SetParameter(2, hist->GetRMS());
 		std::cout << "Max: " << hist->GetMaximum() << " at: " << hist->GetXaxis()->GetBinCenter(hist->GetMaximumBin()) << std::endl;
-		hist->SetTitle(std::to_string(grid_adc_sums_energy.at(i).first).c_str());
+		std::string temp_title = std::to_string(grid_adc_sums_energy.at(i).first) + "GeV";
+		hist->SetTitle(temp_title.c_str());
 		hist->SetFillColor(0);
 		hist->SetLineColor(i+1);
 		hist->SetStats(0);
+		hist->GetXaxis()->SetTitle("ADC sum");
+		hist->GetYaxis()->SetTitle("Count");
+
+
+		hist->SetMaximum(grid_hist_max);
+
 		hist->Draw("same");
 		hist->Fit("fit", "Q0");
 		grid_fits.push_back(std::make_tuple(grid_adc_sums_energy.at(i).first, fit->GetParameter(1), fit->GetParError(1)));
+		//grid_stack->Add(hist.get());
+
+
+
+
 		hist.release();
 	}
 
-	std::string grid_hist_filename = "grid_hist.png";
+	//grid_stack->GetXaxis()->SetTitle("ADC sum");
+	//grid_stack->GetYaxis()->SetTitle("Count");
+	//grid_stack->Draw("nostack");
+
+	std::string grid_hist_filename = folder + mc_tb_affix + "_grid_hist" + IMAGE_EXTENSION;
 	//std::string title = ";" + x_label + ";" + y_label;
 
 	
 	TLegend *grid_leg = grid_canvas->BuildLegend();
-	//leg->SetHeader(legend_title.c_str(), "C");
+	grid_leg->SetHeader("ADC sum histogram", "C");
 
 	//c->SetTopMargin(0.2);
+	gStyle->SetOptTitle(0);
 	grid_canvas->SetRightMargin(0.1);
 	grid_canvas->SetLeftMargin(0.15);
 	grid_canvas->Update();
 	grid_canvas->SaveAs(grid_hist_filename.c_str());
 
 
+
+
+	// CLUSTER HISTOGRAMS
+
+	std::unique_ptr<THStack> cluster_stack = std::make_unique<THStack>("grid_stack", "");
 	// Cluster fits and plots
 	std::unique_ptr<TCanvas> cluster_canvas = std::make_unique<TCanvas>("cluster", "cluster", 1);
 	cluster_canvas->cd();
 	for (int i = 0; i < files.size(); i++){
 		std::cout << std::to_string(cluster_adc_sums_energy.at(i).first) << std::endl;
 		//std::unique_ptr<TH1D> hist = std::make_unique<TH1D>("hist", "", 100, 0, 150000);
-		std::unique_ptr<TH1D> hist = std::make_unique<TH1D>("hist", "", 200, 0, 290000);
+		std::unique_ptr<TH1D> hist = std::make_unique<TH1D>("hist", "", cluster_bins, 0, cluster_xmax);
 		std::unique_ptr<TF1> fit = std::make_unique<TF1>("fit", "gaus");
 		for (auto &v : cluster_adc_sums_energy.at(i).second)
 			hist->Fill(v);
@@ -188,30 +319,95 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 		fit->SetParameter(1, hist->GetMean());
 		fit->SetParameter(2, hist->GetRMS());
 		std::cout << "Max: " << hist->GetMaximum() << " at: " << hist->GetXaxis()->GetBinCenter(hist->GetMaximumBin()) << std::endl;
-		hist->SetTitle(std::to_string(cluster_adc_sums_energy.at(i).first).c_str());
+		std::string temp_title = std::to_string(cluster_adc_sums_energy.at(i).first) + " GeV";
+		hist->SetTitle(temp_title.c_str());
 		hist->SetFillColor(0);
 		hist->SetLineColor(i+1);
 		hist->SetStats(0);
+		hist->GetXaxis()->SetTitle("ADC sum");
+		hist->GetYaxis()->SetTitle("Count");
+		hist->SetMaximum(cluster_hist_max);
+
 		hist->Draw("same");
 		hist->Fit("fit", "Q0");
 		cluster_fits.push_back(std::make_tuple(cluster_adc_sums_energy.at(i).first, fit->GetParameter(1), fit->GetParError(1)));
+
+		//cluster_stack->Add(hist.get());
+
 		hist.release();
 	}
 
-	std::string cluster_hist_filename = "cluster_hist.png";
+	//cluster_stack->GetXaxis()->SetTitle("ADC sum");
+	//cluster_stack->GetYaxis()->SetTitle("Count");
+	//cluster_stack->Draw("nostack");
+
+	std::string cluster_hist_filename = folder + mc_tb_affix + "_cluster_hist" + IMAGE_EXTENSION;
 	//std::string title = ";" + x_label + ";" + y_label;
 
 	
 	TLegend *cluster_leg = cluster_canvas->BuildLegend();
-	//leg->SetHeader(legend_title.c_str(), "C");
+	cluster_leg->SetHeader("Cluster histogram", "C");
 
 	//c->SetTopMargin(0.2);
+	gStyle->SetOptTitle(0);
 	cluster_canvas->SetRightMargin(0.1);
 	cluster_canvas->SetLeftMargin(0.15);
 	cluster_canvas->Update();
 	cluster_canvas->SaveAs(cluster_hist_filename.c_str());
 
 
+
+
+	// LEFTOVER GRID HISTOGRAMS
+	std::unique_ptr<TCanvas> leftover_grid_canvas = std::make_unique<TCanvas>("leftover_grid", "leftover_grid", 1);
+	leftover_grid_canvas->cd();
+	for (int i = 0; i < files.size(); i++){
+		std::cout << std::to_string(leftover_grid_adc_sums_energy.at(i).first) << std::endl;
+		//std::unique_ptr<TH1D> hist = std::make_unique<TH1D>("hist", "", 100, 0, 150000);
+		std::unique_ptr<TH1D> hist = std::make_unique<TH1D>("hist", "", leftover_grid_bins, 0, leftover_grid_xmax);
+		std::unique_ptr<TF1> fit = std::make_unique<TF1>("fit", "gaus");
+		for (auto &v : leftover_grid_adc_sums_energy.at(i).second)
+			hist->Fill(v);
+		fit->SetParameter(0, hist->GetMaximum());
+		fit->SetParameter(1, hist->GetMean());
+		fit->SetParameter(2, hist->GetRMS());
+		std::cout << "Max: " << hist->GetMaximum() << " at: " << hist->GetXaxis()->GetBinCenter(hist->GetMaximumBin()) << std::endl;
+		std::string temp_title = std::to_string(leftover_grid_adc_sums_energy.at(i).first) + "GeV";
+		hist->SetTitle(temp_title.c_str());
+		hist->SetFillColor(0);
+		hist->SetLineColor(i+1);
+		hist->SetStats(0);
+		hist->GetXaxis()->SetTitle("ADC sum");
+		hist->GetYaxis()->SetTitle("Count");
+
+
+		hist->SetMaximum(leftover_grid_hist_max);
+
+		hist->Draw("same");
+		hist->Fit("fit", "Q0");
+		leftover_grid_fits.push_back(std::make_tuple(leftover_grid_adc_sums_energy.at(i).first, fit->GetParameter(1), fit->GetParError(1)));
+
+		hist.release();
+	}
+
+
+	std::string leftover_grid_hist_filename = folder + mc_tb_affix + "_leftover_grid_hist" + IMAGE_EXTENSION;
+	//std::string title = ";" + x_label + ";" + y_label;
+
+	
+	TLegend *leftover_grid_leg = leftover_grid_canvas->BuildLegend();
+	leftover_grid_leg->SetHeader("ADC sum histogram", "C");
+
+	//c->SetTopMargin(0.2);
+	gStyle->SetOptTitle(0);
+	leftover_grid_canvas->SetRightMargin(0.1);
+	leftover_grid_canvas->SetLeftMargin(0.15);
+	leftover_grid_canvas->Update();
+	leftover_grid_canvas->SaveAs(leftover_grid_hist_filename.c_str());
+
+
+
+	// LINEARIZATION
 
 	std::vector<std::unique_ptr<TGraphErrors>> lin_plots;
 	std::unique_ptr<TGraphErrors> grid_points = std::make_unique<TGraphErrors>();
@@ -242,25 +438,48 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 	cluster_lin_fit->SetLineStyle(2);
 	grid_points->Fit("grid_lin_fit", "R");
 	cluster_points->Fit("cluster_lin_fit", "R");
-	lin_plots.push_back(std::move(cluster_points));
 	lin_plots.push_back(std::move(grid_points));
+	lin_plots.push_back(std::move(cluster_points));
 	std::string lin_plot_x_label = "Energy [GeV]";
 	std::string lin_plot_y_label = "ADC Counts";
-	std::string lin_plot_legend_title = "Linearization";
-	std::string lin_plot_filename = "lin_plot" + IMAGE_EXTENSION;
 	save_point_plot(lin_plots, lin_plot_x_label, lin_plot_y_label, lin_plot_legend_title, lin_plot_filename);
 
 
 
-	for (auto &v : grid_fits){
-		std::cout << std::get<0>(v) << ",";
-	}
-	std::cout << std::endl;
+	// LINEARIZATION LEFTOVER GRID
 
-	for (auto &v : cluster_fits){
-		std::cout << std::get<0>(v) << ",";
+	std::vector<std::unique_ptr<TGraphErrors>> leftover_lin_plots;
+	std::unique_ptr<TGraphErrors> full_grid_points = std::make_unique<TGraphErrors>();
+	std::unique_ptr<TGraphErrors> leftover_grid_points = std::make_unique<TGraphErrors>();
+	full_grid_points->SetName("Total ADC");
+	full_grid_points->SetMarkerStyle(21);
+	full_grid_points->SetMarkerColor(kBlue);
+	leftover_grid_points->SetName("Leftover ADC after removing largest cluster");
+	leftover_grid_points->SetMarkerStyle(22);
+	leftover_grid_points->SetMarkerColor(kRed);
+
+	for (int i = 0; i < grid_fits.size(); i++){
+		full_grid_points->SetPoint(i, std::get<0>(grid_fits.at(i)), std::get<1>(grid_fits.at(i)));
+		full_grid_points->SetPointError(i, 0, std::get<2>(grid_fits.at(i)));
+
+		leftover_grid_points->SetPoint(i, std::get<0>(leftover_grid_fits.at(i)), std::get<1>(leftover_grid_fits.at(i)));
+		leftover_grid_points->SetPointError(i, 0, std::get<2>(leftover_grid_fits.at(i)));
+
 	}
-	std::cout << std::endl;
+
+	std::unique_ptr<TF1> full_grid_lin_fit = std::make_unique<TF1>("grid_lin_fit", "pol1", 0, 400);
+	std::unique_ptr<TF1> leftover_grid_lin_fit = std::make_unique<TF1>("leftover_grid_lin_fit", "pol1", 0, 400);
+	full_grid_lin_fit->SetLineColor(kBlue);
+	full_grid_lin_fit->SetLineStyle(2);
+	leftover_grid_lin_fit->SetLineColor(kRed);
+	leftover_grid_lin_fit->SetLineStyle(2);
+	full_grid_points->Fit("grid_lin_fit", "R");
+	leftover_grid_points->Fit("leftover_grid_lin_fit", "R");
+	leftover_lin_plots.push_back(std::move(full_grid_points));
+	leftover_lin_plots.push_back(std::move(leftover_grid_points));
+	std::string leftover_lin_plot_x_label = "Energy [GeV]";
+	std::string leftover_lin_plot_y_label = "ADC Counts";
+	save_point_plot(leftover_lin_plots, leftover_lin_plot_x_label, leftover_lin_plot_y_label, leftover_lin_plot_legend_title, leftover_lin_plot_filename);
 
 
 
@@ -272,23 +491,28 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 
 
 
-void analysis(){
+void analysis(std::string folder){
+
+
+	std::cout << "Clustering and looking at cluster quality..." << std::endl;
+
+
 	std::vector<std::pair<double, double>> MA_params;
-	ANALYSIS_TAG = "_MISC";
+	//ANALYSIS_TAG = "_DIFFSEED";
 	//MA_params.push_back(std::make_pair(100, 10));
 	//MA_params.push_back(std::make_pair(300, 10));
 	//MA_params.push_back(std::make_pair(500, 10));
-	MA_params.push_back(std::make_pair(800, 10));
+	//MA_params.push_back(std::make_pair(800, 10));
 	//MA_params.push_back(std::make_pair(1000, 10));
 
-	//ANALYSIS_TAG = "_DIFFAGG";
-	//MA_params.push_back(std::make_pair(800, 10));
-	//MA_params.push_back(std::make_pair(800, 100));
-	//MA_params.push_back(std::make_pair(800, 300));
-	//MA_params.push_back(std::make_pair(800, 400));
-	//MA_params.push_back(std::make_pair(800, 500));
+	ANALYSIS_TAG = "_DIFFAGG";
+	MA_params.push_back(std::make_pair(800, 10));
+	MA_params.push_back(std::make_pair(800, 100));
+	MA_params.push_back(std::make_pair(800, 300));
+	MA_params.push_back(std::make_pair(800, 400));
+	MA_params.push_back(std::make_pair(800, 500));
 
-	std::string folder = "../data/focalsim/pi_plus_1000e_deg0/";
+	//std::string folder = "../data/focalsim/pi_plus_1000e_deg0/";
 	//std::string folder = "../data/focalsim/pi_plus_100e_deg0/";
 	//std::string folder = "../data/focalsim/pi_plus_deg0/";
 
@@ -661,15 +885,34 @@ void save_heatmap(Grid &g, std::string filename, std::string title){
 	std::unique_ptr<TH2Poly> hist = g.plot_grid();
 	if (SATURATION_VALUE > 0)
 		hist->SetMaximum(SATURATION_VALUE);
-	std::unique_ptr<TCanvas> c = std::make_unique<TCanvas>("c", "c", 2400, 2400);
+	//std::unique_ptr<TCanvas> c = std::make_unique<TCanvas>("c", "c", 2400, 2400);
+	std::unique_ptr<TCanvas> c = std::make_unique<TCanvas>("c", "c", 2);
 	c->cd();
-	gStyle->SetOptStat(0);
+	//gStyle->SetOptStat(0);
+	hist->GetXaxis()->SetTitle("x [cm]");
+	hist->GetYaxis()->SetTitle("y [cm]");
+	hist->SetStats(0);
 	hist->SetTitle(title.c_str());
 	hist->Draw();
 	c->Update();
 	c->SaveAs(filename.c_str());
 }
 
+void save_neighborhood(Grid &g, Cell* cell, std::string filename, std::string title){
+	std::unique_ptr<TH2Poly> hist = g.plot_cell_neighbors(cell);
+	hist->SetMaximum(2);
+	//std::unique_ptr<TCanvas> c = std::make_unique<TCanvas>("c", "c", 2400, 2400);
+	std::unique_ptr<TCanvas> c = std::make_unique<TCanvas>("c", "c", 2);
+	c->cd();
+	//gStyle->SetOptStat(0);
+	hist->GetXaxis()->SetTitle("x [cm]");
+	hist->GetYaxis()->SetTitle("y [cm]");
+	hist->SetStats(0);
+	hist->SetTitle(title.c_str());
+	hist->Draw();
+	c->Update();
+	c->SaveAs(filename.c_str());
+}
 
 void save_point_plot(std::vector<std::unique_ptr<TGraphErrors>> &point_plots, std::string x_label, std::string y_label, std::string legend_title, std::string filename){
 
