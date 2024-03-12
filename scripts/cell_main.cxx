@@ -92,7 +92,7 @@ int main(int argc, char* argv[]){
 
 
 
-	//MA_reconstructed_energies(folder, 800.0, 10);
+	MA_reconstructed_energies(folder, 800.0, 10);
 	//analysis(folder);
 
 
@@ -268,6 +268,8 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 		hist->GetXaxis()->SetTitle("ADC sum");
 		hist->GetYaxis()->SetTitle("Count");
 
+		fit->SetLineStyle(2);
+		fit->SetLineColor(i+1);
 
 		hist->SetMaximum(grid_hist_max);
 
@@ -293,6 +295,7 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 	
 	TLegend *grid_leg = grid_canvas->BuildLegend();
 	grid_leg->SetHeader("ADC sum histogram", "C");
+	grid_leg->SetTextSize(0.023);
 
 	//c->SetTopMargin(0.2);
 	gStyle->SetOptTitle(0);
@@ -351,6 +354,7 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 	
 	TLegend *cluster_leg = cluster_canvas->BuildLegend();
 	cluster_leg->SetHeader("Cluster histogram", "C");
+	cluster_leg->SetTextSize(0.023);
 
 	//c->SetTopMargin(0.2);
 	gStyle->SetOptTitle(0);
@@ -403,6 +407,7 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 	
 	TLegend *leftover_grid_leg = leftover_grid_canvas->BuildLegend();
 	leftover_grid_leg->SetHeader("Leftover ADC sum", "C");
+	leftover_grid_leg->SetTextSize(0.023);
 
 	//c->SetTopMargin(0.2);
 	gStyle->SetOptTitle(0);
@@ -456,17 +461,24 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 
 	std::vector<std::unique_ptr<TGraphErrors>> leftover_lin_plots;
 	std::unique_ptr<TGraphErrors> full_grid_points = std::make_unique<TGraphErrors>();
+	std::unique_ptr<TGraphErrors> cluster_points2 = std::make_unique<TGraphErrors>();
 	std::unique_ptr<TGraphErrors> leftover_grid_points = std::make_unique<TGraphErrors>();
 	full_grid_points->SetName("Total ADC");
 	full_grid_points->SetMarkerStyle(21);
 	full_grid_points->SetMarkerColor(kBlue);
+	cluster_points2->SetName("Dominant cluster");
+	cluster_points2->SetMarkerStyle(22);
+	cluster_points2->SetMarkerColor(kRed);
 	leftover_grid_points->SetName("Leftover ADC after removing largest cluster");
-	leftover_grid_points->SetMarkerStyle(22);
-	leftover_grid_points->SetMarkerColor(kRed);
+	leftover_grid_points->SetMarkerStyle(23);
+	leftover_grid_points->SetMarkerColor(kGreen);
 
 	for (int i = 0; i < grid_fits.size(); i++){
 		full_grid_points->SetPoint(i, std::get<0>(grid_fits.at(i)), std::get<1>(grid_fits.at(i)));
 		full_grid_points->SetPointError(i, 0, std::get<2>(grid_fits.at(i)));
+
+		cluster_points2->SetPoint(i, std::get<0>(cluster_fits.at(i)), std::get<1>(cluster_fits.at(i)));
+		cluster_points2->SetPointError(i, 0, std::get<2>(cluster_fits.at(i)));
 
 		leftover_grid_points->SetPoint(i, std::get<0>(leftover_grid_fits.at(i)), std::get<1>(leftover_grid_fits.at(i)));
 		leftover_grid_points->SetPointError(i, 0, std::get<2>(leftover_grid_fits.at(i)));
@@ -474,14 +486,19 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 	}
 
 	std::unique_ptr<TF1> full_grid_lin_fit = std::make_unique<TF1>("grid_lin_fit", "pol1", 0, 400);
+	std::unique_ptr<TF1> cluster_lin_fit2 = std::make_unique<TF1>("cluster_lin_fit2", "pol1", 0, 400);
 	std::unique_ptr<TF1> leftover_grid_lin_fit = std::make_unique<TF1>("leftover_grid_lin_fit", "pol1", 0, 400);
 	full_grid_lin_fit->SetLineColor(kBlue);
 	full_grid_lin_fit->SetLineStyle(2);
-	leftover_grid_lin_fit->SetLineColor(kRed);
+	cluster_lin_fit2->SetLineColor(kRed);
+	cluster_lin_fit2->SetLineStyle(2);
+	leftover_grid_lin_fit->SetLineColor(kGreen);
 	leftover_grid_lin_fit->SetLineStyle(2);
 	full_grid_points->Fit("grid_lin_fit", "R");
+	cluster_points2->Fit("cluster_lin_fit2", "R");
 	leftover_grid_points->Fit("leftover_grid_lin_fit", "R");
 	leftover_lin_plots.push_back(std::move(full_grid_points));
+	leftover_lin_plots.push_back(std::move(cluster_points2));
 	leftover_lin_plots.push_back(std::move(leftover_grid_points));
 	std::string leftover_lin_plot_x_label = "Energy [GeV]";
 	std::string leftover_lin_plot_y_label = "ADC Counts";
