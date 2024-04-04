@@ -27,11 +27,15 @@ add_library(clustering_util SHARED
 	src/clustering.cxx
 	src/modified_aggregation.cxx
 	src/focal_coordinates.cxx
+	src/geometry.cxx
+	src/focalh.cxx
 	include/cell.h
 	include/grid.h
 	include/clustering.h
 	include/modified_aggregation.h
 	include/focal_coordinates.h
+	include/geometry.h
+	include/focalh.h
 )
 
 target_link_libraries(clustering_util PUBLIC 

@@ -14,6 +14,7 @@
 #include <regex>
 #include <TF1.h>
 #include <THStack.h>
+#include "focalh.h"
 
 const double SATURATION_VALUE = 4096;
 //const double SATURATION_VALUE = 32000;
@@ -22,9 +23,10 @@ const std::string IMAGE_EXTENSION = ".pdf";
 std::string ANALYSIS_TAG = "";
 
 // Move to class
-bool focal_h_grid(Grid& g);
-bool calc_neighbors(Grid &g, Cell *c);
-bool calc_neighbors_all(Grid &g);
+
+
+
+
 
 std::unique_ptr<TGraphErrors> plot_points(std::vector<std::pair<int, std::vector<double>>> data);
 std::unique_ptr<TH1D> plot_1dhist(std::vector<double> &y, unsigned int bins = -1);
@@ -34,8 +36,17 @@ bool MA_clustering(std::string folder, double MA_seed_threshold, double MA_aggre
 	std::vector<std::pair<int, std::vector<double>>> &leftover_max_adc,
 	std::vector<std::pair<int, std::vector<std::vector<std::pair<double, double>>>>> &cluster_center_of_mass
 );
+
+
+
+
+// Move to some util header or find better STL ways of doing it
 double mean(std::vector<double> &vec);
 double standard_error(std::vector<double> &samples);
+
+
+
+
 void save_point_plot(std::vector<std::unique_ptr<TGraphErrors>> &point_plots, std::string x_label, std::string y_label, std::string legend_title, std::string filename);
 void save_1dhist(std::unique_ptr<TH1D> &hist, std::string x_label, std::string y_label, std::string legend_title, std::string filename);
 void save_heatmap(Grid &g, std::string filename, std::string title);
@@ -47,16 +58,21 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 int main(int argc, char* argv[]){
 
 
+	FoCalH focal;
+	Grid &g = focal.get_grid();
 
-
+	/*
 	Grid g;
 	if (!focal_h_grid(g)) return false;
 	calc_neighbors_all(g);
-
+	std::cout << g.get_cells()->size() << std::endl;
+	std::cout << g.get_cells()->at(0)->get_width() << std::endl;
+	*/
 
 	//std::string folder = "../data/testbeam/";
-	std::string file = "../data/testbeam/Run_3226_monocluster.root";
+	//std::string file = "../data/testbeam/Run_3226_monocluster.root";
 	//std::string file = "../data/focalsim/pi_plus_10000e_deg0/250_10000_small.root";
+	std::string file = "../data/focalsim/pi_plus_1000e_deg0/250_1000_analysis.root";
 	//std::string file = "../data/focalsim/misc/250_1_analysis.root";
 	//std::string file = "../data/tstbeam/201_100_tb.root";
 	//std::string filename_fig = "../data/testbeam/OLD.png";
@@ -69,7 +85,7 @@ int main(int argc, char* argv[]){
 
 	for (int i = 0; i < 100; i++){
 		g.fill_grid_ttree_entry(*t, i, true);
-		std::string temp_filename_fig = "../data/testbeam/NEW" + std::to_string(i) + IMAGE_EXTENSION;
+		std::string temp_filename_fig = "../data/focalsim/pi_plus_1000e_deg0/" + std::to_string(i) + IMAGE_EXTENSION;
 		save_heatmap(g, temp_filename_fig, "250 GeV, pi+");
 	}
 
@@ -85,12 +101,12 @@ int main(int argc, char* argv[]){
 
 	//std::string folder = "../data/focalsim/pi_plus_10000e_deg0/";
 	//std::string folder = "../data/focalsim/pi_plus_1000e_deg0/";
-	std::string folder = "../data/focalsim/pi_plus_100e_deg0/";
+	std::string folder = "../data/focalsim/pi_plus_1000e_deg0/";
 	//std::string folder = "../data/testbeam/";
 
 
 
-	MA_reconstructed_energies(folder, 800.0, 10);
+	//MA_reconstructed_energies(folder, 800.0, 10);
 	//analysis(folder);
 
 
@@ -167,9 +183,9 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 		leftover_grid_xmax = 60000;
 	}
 
-	Grid g;
-	if (!focal_h_grid(g)) return false;
-	calc_neighbors_all(g);
+
+	FoCalH focal;
+	Grid &g = focal.get_grid();
 
 	std::vector<std::pair<int, std::vector<double>>> cluster_adc_sums_energy;
 	std::vector<std::pair<int, std::vector<double>>> second_cluster_adc_sums_energy;
@@ -654,10 +670,14 @@ bool MA_clustering(std::string folder, double MA_seed_threshold, double MA_aggre
 	//files.push_back("250_1_analysis.root");
 
 
+	/*
 	Grid g;
 	if (!focal_h_grid(g)) return false;
 	calc_neighbors_all(g);
+	*/
 
+	FoCalH focal;
+	Grid &g = focal.get_grid();
 
 	for (int i = 0; i < files.size(); i++){
 		std::unique_ptr<TFile> f = std::make_unique<TFile>(files.at(i).c_str(), "READ");
@@ -905,117 +925,3 @@ std::vector<std::string> get_files(std::string folder){
 
 
 
-// Create grid according to FocalH geometry. Move later to a file format.
-
-bool focal_h_grid(Grid& g){
-
-	// The sides of the modules are 1.5mm copper plates.
-	// The modules have a 3mm margin.
-	// Modules are 65x65mm^2 with plate
-
-	const double detector_width = 19.5; // cm
-	const double detector_height = 19.5; // cm
-
-	const double module_width = detector_width/3;
-	const double module_height = detector_height/3;
-
-	const unsigned int center_module_rows = 7;
-	const unsigned int center_module_cols = 7;
-
-	const unsigned int outer_module_rows = 5;
-	const unsigned int outer_module_cols = 5;
-
-
-	const std::pair<double, double> center(0.0, 0.0);
-	const std::pair<double, double> module00(center.first - module_width, center.second + module_height);
-	const std::pair<double, double> module01(center.first, center.second + module_height);
-	const std::pair<double, double> module02(center.first + module_width, center.second + module_height);
-	const std::pair<double, double> module10(center.first - module_width, center.second);
-	const std::pair<double, double> module12(center.first + module_width, center.second);
-	const std::pair<double, double> module20(center.first - module_width, center.second - module_height);
-	const std::pair<double, double> module21(center.first, center.second - module_height);
-	const std::pair<double, double> module22(center.first + module_width, center.second - module_height);
-
-	std::vector<std::pair<double, double>> outer_modules;
-	outer_modules.push_back(module00);
-	outer_modules.push_back(module01);
-	outer_modules.push_back(module02);
-	outer_modules.push_back(module10);
-	outer_modules.push_back(module12);
-	outer_modules.push_back(module20);
-	outer_modules.push_back(module21);
-	outer_modules.push_back(module22);
-	std::vector<std::string> outer_board_names = {"B00", "B01", "B02", "B10", "B12", "B20", "B21", "B22"};
-
-	std::string center_board_name = "B11";
-	std::string center_cell_temp_name = "";
-	// Center module
-	for (int r = 0; r < center_module_rows; r++)
-		for (int c = 0; c < center_module_cols; c++){
-			double dx = module_width/center_module_rows;
-			double x = center.first + double(c-3)*dx;
-
-			double dy = module_height/center_module_cols;
-			double y = center.second + double(r-3)*dy;
-
-			center_cell_temp_name = center_board_name+"C"+std::to_string(r)+std::to_string(c);
-			g.make_cell(x,y,0,dx,dy,center_cell_temp_name);
-		}
-
-
-	std::string outer_cell_temp_name = "";
-	for (int i = 0; i < outer_modules.size(); i++){
-		for (int r = 0; r < outer_module_rows; r++)
-			for (int c = 0; c < outer_module_cols; c++){
-				double dx = module_width/outer_module_rows;
-				double x = outer_modules.at(i).first + double(c-2)*dx;
-
-				double dy = module_height/outer_module_cols;
-				double y = outer_modules.at(i).second + double(r-2)*dy;
-				outer_cell_temp_name = outer_board_names.at(i)+"C"+std::to_string(r)+std::to_string(c);
-				g.make_cell(x,y,0,dx,dy,outer_cell_temp_name);
-			}
-	}
-
-
-	return true;
-}
-
-
-bool calc_neighbors_all(Grid &g){
-
-	for (auto &v : *g.get_cells())
-		if (!calc_neighbors(g, &*v)) return false;
-	return true;
-}
-
-bool calc_neighbors(Grid &g, Cell *c){
-
-	const double tol = 0.000001;
-
-	// Cardinal directions
-	std::pair<double, double> E = {c->get_x_position() + c->get_width()/2, c->get_y_position()};
-	std::pair<double, double> NE = {c->get_x_position() + c->get_width()/2, c->get_y_position() + c->get_height()/2};
-	std::pair<double, double> N = {c->get_x_position(), c->get_y_position() + c->get_height()/2};
-	std::pair<double, double> NW = {c->get_x_position() - c->get_width()/2, c->get_y_position() + c->get_height()/2};
-	std::pair<double, double> W = {c->get_x_position() - c->get_width()/2, c->get_y_position()};
-	std::pair<double, double> SW = {c->get_x_position() - c->get_width()/2, c->get_y_position() - c->get_height()/2};
-	std::pair<double, double> S = {c->get_x_position(), c->get_y_position() - c->get_height()/2};
-	std::pair<double, double> SE = {c->get_x_position() + c->get_width()/2, c->get_y_position() - c->get_height()/2};
-
-
-	for (auto &v : *g.get_cells())
-		if (
-			v->hit(E.first+tol,E.second)
-			|| v->hit(NE.first+tol,NE.second+tol)
-			|| v->hit(N.first,N.second+tol)
-			|| v->hit(NW.first-tol,NW.second+tol)
-			|| v->hit(W.first-tol,W.second)
-			|| v->hit(SW.first-tol,SW.second-tol)
-			|| v->hit(S.first,S.second-tol)
-			|| v->hit(SE.first+tol,SE.second-tol)
-		   )
-			c->add_neighbor(v.get());
-
-	return true;
-}
