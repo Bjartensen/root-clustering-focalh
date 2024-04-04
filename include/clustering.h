@@ -50,6 +50,8 @@ public:
 	std::vector<std::string> get_remaining_clusters(std::vector<std::string> &exclude_clusters);
 	std::pair<double, double> cluster_center_of_mass(std::string tag);
 
+	bool cluster_events(TTree &tree, unsigned long start, unsigned long end);
+
 };
 
 #endif // CLUSTERING_H

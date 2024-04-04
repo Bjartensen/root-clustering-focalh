@@ -144,3 +144,25 @@ std::pair<double, double> Clustering::cluster_center_of_mass(std::string tag){
 	return std::make_pair(x_mean, y_mean);
 
 }
+
+
+
+
+bool Clustering::cluster_events(TTree &tree, unsigned long start, unsigned long end){
+
+	// Check bounds
+	if (start < 0) return false;
+	if (end > tree.GetEntries()) return false;
+
+
+	for (int e = start; e < end; e++){
+		// Cluster
+		g->fill_grid_ttree_entry(tree, e, true);
+
+
+		// Save to file
+	}
+
+	return false;
+
+}

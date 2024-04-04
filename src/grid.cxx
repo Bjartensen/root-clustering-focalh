@@ -135,3 +135,31 @@ double Grid::get_grid_sum(){
 	}
 	return sum;
 }
+
+
+
+bool Grid::fill_grid_ttree_entry(TTree& t, int e, bool override_values){
+
+	std::vector<Double_t>* x_pos = nullptr;
+	std::vector<Double_t>* y_pos = nullptr;
+	std::vector<Double_t>* value = nullptr;
+	//std::vector<Double_t>* particle = nullptr;
+
+
+	t.SetBranchAddress("x_pos", &x_pos);
+	t.SetBranchAddress("y_pos", &y_pos);
+	t.SetBranchAddress("value", &value);
+	//t.SetBranchAddress("particle", &particle);
+
+	t.GetEntry(e);
+
+	for (int i = 0; i < x_pos->size(); i++){
+		if (override_values)
+			SetCellValues(x_pos->at(i), y_pos->at(i), value->at(i));
+		else
+			Fill(x_pos->at(i), y_pos->at(i), value->at(i));
+	}
+
+	return true;
+}
+

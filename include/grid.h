@@ -4,6 +4,7 @@
 #include "cell.h"
 #include <memory>
 #include <TH2Poly.h>
+#include <TTree.h>
 
 
 /*
@@ -35,6 +36,9 @@ public:
 
 	std::vector<std::unique_ptr<Cell>>* get_cells() {return &cells;}
 
+
+	//bool fill_grid_ttree_entry(TTree& t, Grid& g, int e, bool override_values);
+	bool fill_grid_ttree_entry(TTree& t, int e, bool override_values);
 };
 
 #endif // GRID_H

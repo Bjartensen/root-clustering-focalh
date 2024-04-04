@@ -21,12 +21,11 @@ const double SATURATION_VALUE = 4096;
 const std::string IMAGE_EXTENSION = ".pdf";
 std::string ANALYSIS_TAG = "";
 
+// Move to class
 bool focal_h_grid(Grid& g);
-bool fill_grid_ttree_entry(TTree& t, Grid& g, int e, bool override_values = false);
-bool focal_h_grid_add_neighbors_cell(Grid& g, std::string cell, std::initializer_list<std::string> neighbors);
-bool focal_h_grid_add_neighbors_all(Grid &g);
 bool calc_neighbors(Grid &g, Cell *c);
 bool calc_neighbors_all(Grid &g);
+
 std::unique_ptr<TGraphErrors> plot_points(std::vector<std::pair<int, std::vector<double>>> data);
 std::unique_ptr<TH1D> plot_1dhist(std::vector<double> &y, unsigned int bins = -1);
 bool MA_clustering(std::string folder, double MA_seed_threshold, double MA_aggregation_threshold,
@@ -52,7 +51,6 @@ int main(int argc, char* argv[]){
 
 	Grid g;
 	if (!focal_h_grid(g)) return false;
-	if (!focal_h_grid_add_neighbors_all(g)) return false;
 	calc_neighbors_all(g);
 
 
@@ -70,7 +68,7 @@ int main(int argc, char* argv[]){
 
 
 	for (int i = 0; i < 100; i++){
-		fill_grid_ttree_entry(*t, g, i, true);
+		g.fill_grid_ttree_entry(*t, i, true);
 		std::string temp_filename_fig = "../data/testbeam/NEW" + std::to_string(i) + IMAGE_EXTENSION;
 		save_heatmap(g, temp_filename_fig, "250 GeV, pi+");
 	}
@@ -87,8 +85,8 @@ int main(int argc, char* argv[]){
 
 	//std::string folder = "../data/focalsim/pi_plus_10000e_deg0/";
 	//std::string folder = "../data/focalsim/pi_plus_1000e_deg0/";
-	//std::string folder = "../data/focalsim/pi_plus_100e_deg0/";
-	std::string folder = "../data/testbeam/";
+	std::string folder = "../data/focalsim/pi_plus_100e_deg0/";
+	//std::string folder = "../data/testbeam/";
 
 
 
@@ -171,7 +169,6 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 
 	Grid g;
 	if (!focal_h_grid(g)) return false;
-	if (!focal_h_grid_add_neighbors_all(g)) return false;
 	calc_neighbors_all(g);
 
 	std::vector<std::pair<int, std::vector<double>>> cluster_adc_sums_energy;
@@ -194,7 +191,7 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 		// For each event
 		for (int e = 0; e < t->GetEntries(); e++){
 
-			fill_grid_ttree_entry(*t, g, e, true);
+			g.fill_grid_ttree_entry(*t, e, true);
 
 			ModifiedAggregation ma(&g, seed_threshold, aggregation_threshold);
 			
@@ -659,7 +656,6 @@ bool MA_clustering(std::string folder, double MA_seed_threshold, double MA_aggre
 
 	Grid g;
 	if (!focal_h_grid(g)) return false;
-	if (!focal_h_grid_add_neighbors_all(g)) return false;
 	calc_neighbors_all(g);
 
 
@@ -674,7 +670,7 @@ bool MA_clustering(std::string folder, double MA_seed_threshold, double MA_aggre
 		std::vector<std::vector<std::pair<double, double>>> cluster_center_of_mass_temp;
 		for (int e = 0; e < t->GetEntries(); e++){
 
-			fill_grid_ttree_entry(*t, g, e, true);
+			g.fill_grid_ttree_entry(*t, e, true);
 
 			ModifiedAggregation ma(&g, MA_seed_threshold, MA_aggregation_threshold);
 			
@@ -733,167 +729,9 @@ bool MA_clustering(std::string folder, double MA_seed_threshold, double MA_aggre
 }
 
 
-// Create grid according to FocalH geometry. Move later to a file format.
-
-bool focal_h_grid(Grid& g){
-
-	// The sides of the modules are 1.5mm copper plates.
-	// The modules have a 3mm margin.
-	// Modules are 65x65mm^2 with plate
-
-	const double detector_width = 19.5; // cm
-	const double detector_height = 19.5; // cm
-
-	const double module_width = detector_width/3;
-	const double module_height = detector_height/3;
-
-	const unsigned int center_module_rows = 7;
-	const unsigned int center_module_cols = 7;
-
-	const unsigned int outer_module_rows = 5;
-	const unsigned int outer_module_cols = 5;
-
-
-	const std::pair<double, double> center(0.0, 0.0);
-	const std::pair<double, double> module00(center.first - module_width, center.second + module_height);
-	const std::pair<double, double> module01(center.first, center.second + module_height);
-	const std::pair<double, double> module02(center.first + module_width, center.second + module_height);
-	const std::pair<double, double> module10(center.first - module_width, center.second);
-	const std::pair<double, double> module12(center.first + module_width, center.second);
-	const std::pair<double, double> module20(center.first - module_width, center.second - module_height);
-	const std::pair<double, double> module21(center.first, center.second - module_height);
-	const std::pair<double, double> module22(center.first + module_width, center.second - module_height);
-
-	std::vector<std::pair<double, double>> outer_modules;
-	outer_modules.push_back(module00);
-	outer_modules.push_back(module01);
-	outer_modules.push_back(module02);
-	outer_modules.push_back(module10);
-	outer_modules.push_back(module12);
-	outer_modules.push_back(module20);
-	outer_modules.push_back(module21);
-	outer_modules.push_back(module22);
-	std::vector<std::string> outer_board_names = {"B00", "B01", "B02", "B10", "B12", "B20", "B21", "B22"};
-
-	std::string center_board_name = "B11";
-	std::string center_cell_temp_name = "";
-	// Center module
-	for (int r = 0; r < center_module_rows; r++)
-		for (int c = 0; c < center_module_cols; c++){
-			double dx = module_width/center_module_rows;
-			double x = center.first + double(c-3)*dx;
-
-			double dy = module_height/center_module_cols;
-			double y = center.second + double(r-3)*dy;
-
-			center_cell_temp_name = center_board_name+"C"+std::to_string(r)+std::to_string(c);
-			g.make_cell(x,y,0,dx,dy,center_cell_temp_name);
-		}
-
-
-	std::string outer_cell_temp_name = "";
-	for (int i = 0; i < outer_modules.size(); i++){
-		for (int r = 0; r < outer_module_rows; r++)
-			for (int c = 0; c < outer_module_cols; c++){
-				double dx = module_width/outer_module_rows;
-				double x = outer_modules.at(i).first + double(c-2)*dx;
-
-				double dy = module_height/outer_module_cols;
-				double y = outer_modules.at(i).second + double(r-2)*dy;
-				outer_cell_temp_name = outer_board_names.at(i)+"C"+std::to_string(r)+std::to_string(c);
-				g.make_cell(x,y,0,dx,dy,outer_cell_temp_name);
-			}
-	}
-
-
-	return true;
-}
-
-bool fill_grid_ttree_entry(TTree& t, Grid& g, int e, bool override_values){
-
-	std::vector<Double_t>* x_pos = nullptr;
-	std::vector<Double_t>* y_pos = nullptr;
-	std::vector<Double_t>* value = nullptr;
-	//std::vector<Double_t>* particle = nullptr;
-
-
-	t.SetBranchAddress("x_pos", &x_pos);
-	t.SetBranchAddress("y_pos", &y_pos);
-	t.SetBranchAddress("value", &value);
-	//t.SetBranchAddress("particle", &particle);
-
-	t.GetEntry(e);
-
-	for (int i = 0; i < x_pos->size(); i++){
-		if (override_values)
-			g.SetCellValues(x_pos->at(i), y_pos->at(i), value->at(i));
-		else
-			g.Fill(x_pos->at(i), y_pos->at(i), value->at(i));
-	}
-
-	return true;
-}
-
-bool focal_h_grid_add_neighbors_all(Grid& g){
-	//if (!focal_h_grid_add_neighbors_cell(g, "B11C00", {"B11C01", "B11C10", "B11C11","B21C40","B20C44", "B10C04"})) return false;
-	//if (!focal_h_grid_add_neighbors_cell(g, "B11C01", {"B11C11", "B11C12", "B11C02","B21C41","B21C40", "B11C00", "B11C10"})) return false;
 
 
 
-
-	return true;
-}
-
-
-
-bool focal_h_grid_add_neighbors_cell(Grid& g, std::string cell, std::initializer_list<std::string> neighbors){
-
-	auto c = g.get_cell(cell); if (!c) return false;
-	for (auto n : neighbors){
-		if(!c->add_neighbor(&*g.get_cell(n))) return false;
-	}
-
-	return true;
-}
-
-
-
-bool calc_neighbors_all(Grid &g){
-
-	for (auto &v : *g.get_cells())
-		if (!calc_neighbors(g, &*v)) return false;
-	return true;
-}
-
-bool calc_neighbors(Grid &g, Cell *c){
-
-	const double tol = 0.000001;
-
-	std::pair<double, double> E = {c->get_x_position() + c->get_width()/2, c->get_y_position()};
-	std::pair<double, double> NE = {c->get_x_position() + c->get_width()/2, c->get_y_position() + c->get_height()/2};
-	std::pair<double, double> N = {c->get_x_position(), c->get_y_position() + c->get_height()/2};
-	std::pair<double, double> NW = {c->get_x_position() - c->get_width()/2, c->get_y_position() + c->get_height()/2};
-	std::pair<double, double> W = {c->get_x_position() - c->get_width()/2, c->get_y_position()};
-	std::pair<double, double> SW = {c->get_x_position() - c->get_width()/2, c->get_y_position() - c->get_height()/2};
-	std::pair<double, double> S = {c->get_x_position(), c->get_y_position() - c->get_height()/2};
-	std::pair<double, double> SE = {c->get_x_position() + c->get_width()/2, c->get_y_position() - c->get_height()/2};
-
-
-	for (auto &v : *g.get_cells())
-		if (
-			v->hit(E.first+tol,E.second)
-			|| v->hit(NE.first+tol,NE.second+tol)
-			|| v->hit(N.first,N.second+tol)
-			|| v->hit(NW.first-tol,NW.second+tol)
-			|| v->hit(W.first-tol,W.second)
-			|| v->hit(SW.first-tol,SW.second-tol)
-			|| v->hit(S.first,S.second-tol)
-			|| v->hit(SE.first+tol,SE.second-tol)
-		   )
-			c->add_neighbor(v.get());
-
-	return true;
-}
 
 
 
@@ -1018,6 +856,24 @@ void save_1dhist(std::unique_ptr<TH1D> &hist, std::string x_label, std::string y
 	c->SaveAs(filename.c_str());
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Move to class
+// Class focal_geometry subclass of Grid
+//
+
 double standard_error(std::vector<Double_t> &samples){
 	double mean = 0.0;
 	double std_dev = 0.0;
@@ -1045,4 +901,121 @@ std::vector<std::string> get_files(std::string folder){
 			files.push_back(entry.path().u8string());
 		}
 	return files;
+}
+
+
+
+// Create grid according to FocalH geometry. Move later to a file format.
+
+bool focal_h_grid(Grid& g){
+
+	// The sides of the modules are 1.5mm copper plates.
+	// The modules have a 3mm margin.
+	// Modules are 65x65mm^2 with plate
+
+	const double detector_width = 19.5; // cm
+	const double detector_height = 19.5; // cm
+
+	const double module_width = detector_width/3;
+	const double module_height = detector_height/3;
+
+	const unsigned int center_module_rows = 7;
+	const unsigned int center_module_cols = 7;
+
+	const unsigned int outer_module_rows = 5;
+	const unsigned int outer_module_cols = 5;
+
+
+	const std::pair<double, double> center(0.0, 0.0);
+	const std::pair<double, double> module00(center.first - module_width, center.second + module_height);
+	const std::pair<double, double> module01(center.first, center.second + module_height);
+	const std::pair<double, double> module02(center.first + module_width, center.second + module_height);
+	const std::pair<double, double> module10(center.first - module_width, center.second);
+	const std::pair<double, double> module12(center.first + module_width, center.second);
+	const std::pair<double, double> module20(center.first - module_width, center.second - module_height);
+	const std::pair<double, double> module21(center.first, center.second - module_height);
+	const std::pair<double, double> module22(center.first + module_width, center.second - module_height);
+
+	std::vector<std::pair<double, double>> outer_modules;
+	outer_modules.push_back(module00);
+	outer_modules.push_back(module01);
+	outer_modules.push_back(module02);
+	outer_modules.push_back(module10);
+	outer_modules.push_back(module12);
+	outer_modules.push_back(module20);
+	outer_modules.push_back(module21);
+	outer_modules.push_back(module22);
+	std::vector<std::string> outer_board_names = {"B00", "B01", "B02", "B10", "B12", "B20", "B21", "B22"};
+
+	std::string center_board_name = "B11";
+	std::string center_cell_temp_name = "";
+	// Center module
+	for (int r = 0; r < center_module_rows; r++)
+		for (int c = 0; c < center_module_cols; c++){
+			double dx = module_width/center_module_rows;
+			double x = center.first + double(c-3)*dx;
+
+			double dy = module_height/center_module_cols;
+			double y = center.second + double(r-3)*dy;
+
+			center_cell_temp_name = center_board_name+"C"+std::to_string(r)+std::to_string(c);
+			g.make_cell(x,y,0,dx,dy,center_cell_temp_name);
+		}
+
+
+	std::string outer_cell_temp_name = "";
+	for (int i = 0; i < outer_modules.size(); i++){
+		for (int r = 0; r < outer_module_rows; r++)
+			for (int c = 0; c < outer_module_cols; c++){
+				double dx = module_width/outer_module_rows;
+				double x = outer_modules.at(i).first + double(c-2)*dx;
+
+				double dy = module_height/outer_module_cols;
+				double y = outer_modules.at(i).second + double(r-2)*dy;
+				outer_cell_temp_name = outer_board_names.at(i)+"C"+std::to_string(r)+std::to_string(c);
+				g.make_cell(x,y,0,dx,dy,outer_cell_temp_name);
+			}
+	}
+
+
+	return true;
+}
+
+
+bool calc_neighbors_all(Grid &g){
+
+	for (auto &v : *g.get_cells())
+		if (!calc_neighbors(g, &*v)) return false;
+	return true;
+}
+
+bool calc_neighbors(Grid &g, Cell *c){
+
+	const double tol = 0.000001;
+
+	// Cardinal directions
+	std::pair<double, double> E = {c->get_x_position() + c->get_width()/2, c->get_y_position()};
+	std::pair<double, double> NE = {c->get_x_position() + c->get_width()/2, c->get_y_position() + c->get_height()/2};
+	std::pair<double, double> N = {c->get_x_position(), c->get_y_position() + c->get_height()/2};
+	std::pair<double, double> NW = {c->get_x_position() - c->get_width()/2, c->get_y_position() + c->get_height()/2};
+	std::pair<double, double> W = {c->get_x_position() - c->get_width()/2, c->get_y_position()};
+	std::pair<double, double> SW = {c->get_x_position() - c->get_width()/2, c->get_y_position() - c->get_height()/2};
+	std::pair<double, double> S = {c->get_x_position(), c->get_y_position() - c->get_height()/2};
+	std::pair<double, double> SE = {c->get_x_position() + c->get_width()/2, c->get_y_position() - c->get_height()/2};
+
+
+	for (auto &v : *g.get_cells())
+		if (
+			v->hit(E.first+tol,E.second)
+			|| v->hit(NE.first+tol,NE.second+tol)
+			|| v->hit(N.first,N.second+tol)
+			|| v->hit(NW.first-tol,NW.second+tol)
+			|| v->hit(W.first-tol,W.second)
+			|| v->hit(SW.first-tol,SW.second-tol)
+			|| v->hit(S.first,S.second-tol)
+			|| v->hit(SE.first+tol,SE.second-tol)
+		   )
+			c->add_neighbor(v.get());
+
+	return true;
 }
