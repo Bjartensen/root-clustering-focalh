@@ -9,7 +9,9 @@ class ModifiedAggregation : public Clustering{
 	double seed_threshold;
 	double aggregation_threshold;
 public:
-	ModifiedAggregation(Grid *_g, double _seed, double _agg) : Clustering(_g), seed_threshold(_seed), aggregation_threshold(_agg) {}
+	ModifiedAggregation(Grid &_g, double _seed, double _agg) : Clustering(_g), seed_threshold(_seed), aggregation_threshold(_agg) {}
+
+	ModifiedAggregation(double _seed, double _agg) : Clustering(), seed_threshold(_seed), aggregation_threshold(_agg) {}
 
 	bool tag();
 	//bool find_maximum(std::vector<Cell*> *pool);

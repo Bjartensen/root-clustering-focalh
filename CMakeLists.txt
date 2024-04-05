@@ -29,6 +29,7 @@ add_library(clustering_util SHARED
 	src/focal_coordinates.cxx
 	src/geometry.cxx
 	src/focalh.cxx
+	src/cluster_events.cxx
 	include/cell.h
 	include/grid.h
 	include/clustering.h
@@ -36,6 +37,7 @@ add_library(clustering_util SHARED
 	include/focal_coordinates.h
 	include/geometry.h
 	include/focalh.h
+	include/cluster_events.h
 )
 
 target_link_libraries(clustering_util PUBLIC 

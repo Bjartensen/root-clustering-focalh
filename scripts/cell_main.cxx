@@ -106,7 +106,7 @@ int main(int argc, char* argv[]){
 
 
 
-	//MA_reconstructed_energies(folder, 800.0, 10);
+	MA_reconstructed_energies(folder, 800.0, 10);
 	//analysis(folder);
 
 
@@ -209,7 +209,9 @@ bool MA_reconstructed_energies(std::string folder, double seed_threshold, double
 
 			g.fill_grid_ttree_entry(*t, e, true);
 
-			ModifiedAggregation ma(&g, seed_threshold, aggregation_threshold);
+			//ModifiedAggregation ma(g, seed_threshold, aggregation_threshold);
+			ModifiedAggregation ma(seed_threshold, aggregation_threshold);
+			ma.set_grid(g);
 			
 			// Any clusters found
 			if (ma.tag()){
@@ -692,7 +694,7 @@ bool MA_clustering(std::string folder, double MA_seed_threshold, double MA_aggre
 
 			g.fill_grid_ttree_entry(*t, e, true);
 
-			ModifiedAggregation ma(&g, MA_seed_threshold, MA_aggregation_threshold);
+			ModifiedAggregation ma(g, MA_seed_threshold, MA_aggregation_threshold);
 			
 			// Any clusters found
 			if (ma.tag()){

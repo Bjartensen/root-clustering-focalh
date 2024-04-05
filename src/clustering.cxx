@@ -1,8 +1,13 @@
 #include "clustering.h"
 #include <iostream>
 
-Clustering::Clustering(Grid *_g){
-	g = _g;
+Clustering::Clustering(Grid &_g){
+	set_grid(_g);
+}
+
+
+void Clustering::set_grid(Grid &_g){
+	g = &_g;
 	for (auto &v : *g->get_cells()){
 		untagged_cells.push_back(v.get());
 	}

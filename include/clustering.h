@@ -20,8 +20,12 @@ private:
 	std::map<Cell*, std::string> tagged_cells;
 
 public:
-	Clustering(Grid *_g);
+	Clustering(Grid &_g);
+	Clustering() {g=nullptr;}
 	virtual bool tag() = 0;
+
+	// Sets a Grid to the object. Used by constructors to initialize.
+	void set_grid(Grid &_g);
 
 	Grid* get_grid(){return g;}
 
