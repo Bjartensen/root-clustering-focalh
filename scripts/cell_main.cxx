@@ -189,8 +189,21 @@ void test_cluster_writer(std::string file){
 
 	// Try reading in the file now
 
-
 	ClusterWriter reader(filename, std::ios_base::in);
+	reader.open();
+
+	ClusterWriter::Event ev;
+	long evnum;
+
+	if (reader.read_event(ev, evnum)){
+		std::cout << "Read event! Event number: " << evnum << std::endl;
+		for (int i = 0; i < ev.x_vec.size(); i++){
+			std::cout << ev.x_vec.at(i) << "," << ev.y_vec.at(i) << "," << ev.val_vec.at(i) << ","  << ev.cluster_id_vec.at(i) << std::endl;
+
+		}
+	}
+
+	reader.close();
 
 
 }

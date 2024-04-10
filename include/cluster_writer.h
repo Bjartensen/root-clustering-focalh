@@ -4,6 +4,7 @@
 #include <vector>
 #include <fstream>
 #include <string>
+#include <sstream>
 #include "cell.h"
 #include <map>
 
@@ -24,20 +25,21 @@ private:
 	std::string filename;
 
 	// Move to enums?
-	const std::string DELIM = ",";
+	//const std::string DELIM = ",";
+	const char DELIM = ',';
+	
 	const std::string EOL = "\n";
 	const std::string CLUSTER_EXT = ".cluster";
 	const std::string CLUSTER_META_EXT = ".clustermeta";
 	const std::string EVENT_HEADER_START = "E:";
 
-	// Struct for even values
-	struct Event{
+
+	struct EventLine{
 		double x;
 		double y;
 		double val;
-		double cluster_id;
+		std::string cluster_id;
 	};
-
 
 
 	// I don't see a reason for wanting both for the same file.
@@ -46,7 +48,14 @@ private:
 	std::ios_base::openmode mode;
 
 public:
-	enum class rw_flag{in = false, out = true};
+
+	// Struct-of-Array for event values
+	struct Event{
+		std::vector<double> x_vec;
+		std::vector<double> y_vec;
+		std::vector<double> val_vec;
+		std::vector<std::string> cluster_id_vec;
+	};
 
 	ClusterWriter(std::string _filename, std::ios_base::openmode _mode) : filename(_filename), mode(_mode){}
 	bool open();
@@ -59,9 +68,12 @@ public:
 	bool write_metadata();
 
 	// Read
-	bool read_event(TaggedCells &cells, const long &event_number);
-	bool read_line(double &x, double &y, double &value, std::string &cluster_id);
+	bool read_event(Event &event, long &event_number);
+	bool read_event_line(std::string line, EventLine &event_line);
 	bool read_metadata();
+	bool read_event_header(std::string &line, long &event_number);
+	bool is_event_header(std::string &line);
+
 };
 
 
