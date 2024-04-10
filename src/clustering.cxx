@@ -17,14 +17,14 @@ void Clustering::set_grid(Grid &_g){
 void Clustering::print_untagged(){
 	std::cout << "Size: " << untagged_cells.size() << std::endl;
 	for (auto &v : untagged_cells)
-		std::cout << v->get_id() << " x:" << v->get_x_position() << " y:" << v->get_y_position() << " val:" << v->get_value() << std::endl;
+		std::cout << v->get_id() << " x:" << v->get_x() << " y:" << v->get_y() << " val:" << v->get_value() << std::endl;
 }
 
 
 void Clustering::print_tagged(){
 	std::cout << "Size: " << tagged_cells.size() << std::endl;
 	for (auto &v : tagged_cells)
-		std::cout << v.first->get_id() << " x:" << v.first->get_x_position() << " y:" << v.first->get_y_position() << " val:" << v.first->get_value() << " tag:" << v.second << std::endl;
+		std::cout << v.first->get_id() << " x:" << v.first->get_x() << " y:" << v.first->get_y() << " val:" << v.first->get_value() << " tag:" << v.second << std::endl;
 }
 
 void Clustering::add_tag(std::string tag, Cell* c){
@@ -140,8 +140,8 @@ std::pair<double, double> Clustering::cluster_center_of_mass(std::string tag){
 	double y_mean = 0.0;
 	for (const auto &v : *get_tagged_cells())
 		if (v.second == tag){
-			x_mean += v.first->get_x_position() * v.first->get_value();
-			y_mean += v.first->get_y_position() * v.first->get_value();
+			x_mean += v.first->get_x() * v.first->get_value();
+			y_mean += v.first->get_y() * v.first->get_value();
 		}
 	x_mean /= get_cluster_sum(tag);
 	y_mean /= get_cluster_sum(tag);

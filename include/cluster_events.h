@@ -2,6 +2,7 @@
 #define CLUSTER_EVENTS_H
 
 #include "clustering.h"
+#include "cluster_writer.h"
 #include <TFile.h>
 #include <vector>
 

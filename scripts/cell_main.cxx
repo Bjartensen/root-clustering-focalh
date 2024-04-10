@@ -16,6 +16,9 @@
 #include <THStack.h>
 #include "focalh.h"
 
+
+#include "cluster_events.h"
+
 const double SATURATION_VALUE = 4096;
 //const double SATURATION_VALUE = 32000;
 //const std::string IMAGE_EXTENSION = ".png";
@@ -45,6 +48,7 @@ double mean(std::vector<double> &vec);
 double standard_error(std::vector<double> &samples);
 
 
+void test_cluster_writer(std::string file);
 
 
 void save_point_plot(std::vector<std::unique_ptr<TGraphErrors>> &point_plots, std::string x_label, std::string y_label, std::string legend_title, std::string filename);
@@ -83,7 +87,7 @@ int main(int argc, char* argv[]){
 	auto t = static_cast<TTree*>(f->Get("T"));
 
 
-	for (int i = 0; i < 100; i++){
+	for (int i = 0; i < 10; i++){
 		g.fill_grid_ttree_entry(*t, i, true);
 		std::string temp_filename_fig = "../data/focalsim/pi_plus_1000e_deg0/" + std::to_string(i) + IMAGE_EXTENSION;
 		save_heatmap(g, temp_filename_fig, "250 GeV, pi+");
@@ -106,13 +110,89 @@ int main(int argc, char* argv[]){
 
 
 
-	MA_reconstructed_energies(folder, 800.0, 10);
+	//MA_reconstructed_energies(folder, 800.0, 10);
 	//analysis(folder);
+	test_cluster_writer(file);
 
 
 
 
 	return 0;
+}
+
+
+void test_cluster_writer(std::string file){
+	FoCalH focal;
+	Grid &g = focal.get_grid();
+
+	std::string folder;
+	std::string filename = "test";
+
+	std::unique_ptr<TFile> f = std::make_unique<TFile>(file.c_str(), "READ");
+	std::cout << "Opening file: " << file << std::endl;
+	auto t = static_cast<TTree*>(f->Get("T"));
+	int energy_temp = static_cast<TParameter<int>*>(f->Get("energy"))->GetVal();
+
+	std::vector<double> cluster_adc_sums;
+	std::vector<double> second_cluster_adc_sums;
+	std::vector<double> grid_adc_sums;
+	std::vector<double> leftover_grid_adc_sums;
+
+	ClusterWriter writer(filename, std::ios_base::out);
+	writer.open();
+
+	// For each event
+	for (int e = 38; e < 40; e++){
+
+		std::cout << "Clustering event " << e << std::endl;
+
+		g.fill_grid_ttree_entry(*t, e, true);
+
+		double seed_threshold = 0;
+		double aggregation_threshold = 0;
+		//ModifiedAggregation ma(g, seed_threshold, aggregation_threshold);
+		ModifiedAggregation ma(seed_threshold, aggregation_threshold);
+		ma.set_grid(g);
+		
+		// Any clusters found
+		if (ma.tag()){
+			std::string main_cluster = ma.get_largest_cluster();
+			cluster_adc_sums.push_back(ma.get_cluster_sum(main_cluster));
+			leftover_grid_adc_sums.push_back(g.get_grid_sum() - ma.get_cluster_sum(main_cluster));
+
+
+		// No clusters found
+		}else{
+			cluster_adc_sums.push_back(0.0);
+			leftover_grid_adc_sums.push_back(g.get_grid_sum());
+		}
+		grid_adc_sums.push_back(g.get_grid_sum());
+
+		// 3 + 3*7 = 0,0
+		int idx = 3 + 3*7;
+		//int idx = 3 + 3*7*5;
+		Cell &gc = *ma.get_grid()->get_cells()->at(idx).get();
+		auto ccm = ma.get_tagged_cells()->at(&gc);
+		std::cout << gc.get_x() << "," << gc.get_y() << "," << gc.get_value() << ",tag:" << ccm << std::endl;
+
+
+
+		if (!writer.write_event(*ma.get_tagged_cells(), e))
+			std::cout << "Couldn't write" << std::endl;
+
+
+	}
+
+	writer.close();
+
+
+
+	// Try reading in the file now
+
+
+	ClusterWriter reader(filename, std::ios_base::in);
+
+
 }
 
 

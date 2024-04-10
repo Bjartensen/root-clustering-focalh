@@ -34,24 +34,24 @@ std::unique_ptr<TH2Poly> Grid::plot_grid(){
 
 	for (auto &v : cells){
 		// Quadrant I
-		x.push_back(v->get_x_position() + (v->get_width()/2 - margin));
-		y.push_back(v->get_y_position() + (v->get_height()/2 - margin));
+		x.push_back(v->get_x() + (v->get_width()/2 - margin));
+		y.push_back(v->get_y() + (v->get_height()/2 - margin));
 
 		// Quadrant II
-		x.push_back(v->get_x_position() - (v->get_width()/2 - margin));
-		y.push_back(v->get_y_position() + (v->get_height()/2 - margin));
+		x.push_back(v->get_x() - (v->get_width()/2 - margin));
+		y.push_back(v->get_y() + (v->get_height()/2 - margin));
 
 
 		// Quadrant III
-		x.push_back(v->get_x_position() - (v->get_width()/2 - margin));
-		y.push_back(v->get_y_position() - (v->get_height()/2 - margin));
+		x.push_back(v->get_x() - (v->get_width()/2 - margin));
+		y.push_back(v->get_y() - (v->get_height()/2 - margin));
 
 		// Quadrant IV
-		x.push_back(v->get_x_position() + (v->get_width()/2 - margin));
-		y.push_back(v->get_y_position() - (v->get_height()/2 - margin));
+		x.push_back(v->get_x() + (v->get_width()/2 - margin));
+		y.push_back(v->get_y() - (v->get_height()/2 - margin));
 
 		ptr->AddBin(vertices, &x[0], &y[0]);
-		ptr->Fill(v->get_x_position(), v->get_y_position(), v->get_value());
+		ptr->Fill(v->get_x(), v->get_y(), v->get_value());
 
 		x.clear();
 		y.clear();
@@ -77,21 +77,21 @@ std::unique_ptr<TH2Poly> Grid::plot_cell_neighbors(Cell* c){
 
 	for (auto &v : cells){
 		// Quadrant I
-		x.push_back(v->get_x_position() + (v->get_width()/2 - margin));
-		y.push_back(v->get_y_position() + (v->get_height()/2 - margin));
+		x.push_back(v->get_x() + (v->get_width()/2 - margin));
+		y.push_back(v->get_y() + (v->get_height()/2 - margin));
 
 		// Quadrant II
-		x.push_back(v->get_x_position() - (v->get_width()/2 - margin));
-		y.push_back(v->get_y_position() + (v->get_height()/2 - margin));
+		x.push_back(v->get_x() - (v->get_width()/2 - margin));
+		y.push_back(v->get_y() + (v->get_height()/2 - margin));
 
 
 		// Quadrant III
-		x.push_back(v->get_x_position() - (v->get_width()/2 - margin));
-		y.push_back(v->get_y_position() - (v->get_height()/2 - margin));
+		x.push_back(v->get_x() - (v->get_width()/2 - margin));
+		y.push_back(v->get_y() - (v->get_height()/2 - margin));
 
 		// Quadrant IV
-		x.push_back(v->get_x_position() + (v->get_width()/2 - margin));
-		y.push_back(v->get_y_position() - (v->get_height()/2 - margin));
+		x.push_back(v->get_x() + (v->get_width()/2 - margin));
+		y.push_back(v->get_y() - (v->get_height()/2 - margin));
 
 		ptr->AddBin(vertices, &x[0], &y[0]);
 
@@ -102,9 +102,9 @@ std::unique_ptr<TH2Poly> Grid::plot_cell_neighbors(Cell* c){
 
 	//ptr->GetXaxis()->SetTitle("x [cm]");
 	//ptr->GetYaxis()->SetTitle("y [cm]");
-	ptr->Fill(c->get_x_position(), c->get_y_position(), 1);
+	ptr->Fill(c->get_x(), c->get_y(), 1);
 	for (auto n : *c->get_neighbors())
-		ptr->Fill(n->get_x_position(), n->get_y_position(), 2);
+		ptr->Fill(n->get_x(), n->get_y(), 2);
 
 	return std::move(ptr);
 }

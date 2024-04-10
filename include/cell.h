@@ -35,16 +35,16 @@ public:
 	
 	
 	// Setters
-	void set_x_position(double _x) {x_position=_x;}
-	void set_y_position(double _y) {y_position=_y;}
+	void set_x(double _x) {x_position=_x;}
+	void set_y(double _y) {y_position=_y;}
 	void set_value(double _val) {value=_val;}
 	void set_width(double _w) {width=_w;}
 	void set_height(double _h) {height=_h;}
 	void set_tag(std::string _t) {tag=_t;}
 
 	// Getters
-	double get_x_position() {return x_position;}
-	double get_y_position() {return y_position;}
+	double get_x() {return x_position;}
+	double get_y() {return y_position;}
 	double get_value() {return value;}
 	double get_width() {return width;}
 	double get_height() {return height;}

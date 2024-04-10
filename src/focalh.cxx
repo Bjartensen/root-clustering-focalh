@@ -97,14 +97,14 @@ bool FoCalH::calc_neighbors_for_cell(Grid &g, Cell &c){
 	const double tol = 0.000001;
 
 	// Cardinal directions
-	std::pair<double, double> E = {c.get_x_position() + c.get_width()/2, c.get_y_position()};
-	std::pair<double, double> NE = {c.get_x_position() + c.get_width()/2, c.get_y_position() + c.get_height()/2};
-	std::pair<double, double> N = {c.get_x_position(), c.get_y_position() + c.get_height()/2};
-	std::pair<double, double> NW = {c.get_x_position() - c.get_width()/2, c.get_y_position() + c.get_height()/2};
-	std::pair<double, double> W = {c.get_x_position() - c.get_width()/2, c.get_y_position()};
-	std::pair<double, double> SW = {c.get_x_position() - c.get_width()/2, c.get_y_position() - c.get_height()/2};
-	std::pair<double, double> S = {c.get_x_position(), c.get_y_position() - c.get_height()/2};
-	std::pair<double, double> SE = {c.get_x_position() + c.get_width()/2, c.get_y_position() - c.get_height()/2};
+	std::pair<double, double> E = {c.get_x() + c.get_width()/2, c.get_y()};
+	std::pair<double, double> NE = {c.get_x() + c.get_width()/2, c.get_y() + c.get_height()/2};
+	std::pair<double, double> N = {c.get_x(), c.get_y() + c.get_height()/2};
+	std::pair<double, double> NW = {c.get_x() - c.get_width()/2, c.get_y() + c.get_height()/2};
+	std::pair<double, double> W = {c.get_x() - c.get_width()/2, c.get_y()};
+	std::pair<double, double> SW = {c.get_x() - c.get_width()/2, c.get_y() - c.get_height()/2};
+	std::pair<double, double> S = {c.get_x(), c.get_y() - c.get_height()/2};
+	std::pair<double, double> SE = {c.get_x() + c.get_width()/2, c.get_y() - c.get_height()/2};
 
 
 	for (auto &v : *g.get_cells())
