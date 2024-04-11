@@ -129,8 +129,8 @@ _deps
 
 
 ### ROOT Clustering ###
-#*.cluster
-#*.clustermeta
+*.cluster
+*.clustermeta
 
 # End of https://www.toptal.com/developers/gitignore/api/cmake,c++,root,images
 
