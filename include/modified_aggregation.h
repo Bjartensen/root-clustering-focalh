@@ -14,6 +14,7 @@ public:
 	ModifiedAggregation(double _seed, double _agg) : Clustering(), seed_threshold(_seed), aggregation_threshold(_agg) {}
 
 	bool tag();
+	std::string name();
 	//bool find_maximum(std::vector<Cell*> *pool);
 	//bool is_maximum(Cell *c);
 	static bool greater(Cell* a, Cell* b){return (a->get_value() > b->get_value());}

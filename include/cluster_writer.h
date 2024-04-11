@@ -7,8 +7,7 @@
 #include <sstream>
 #include "cell.h"
 #include <map>
-
-
+#include "clustering.h"
 
 
 class ClusterWriter{
@@ -17,12 +16,13 @@ using Vec = std::vector<double>;
 using StringVec = std::vector<std::string>;
 
 // A bit spooky that this class should know this structure from Clustering
-using TaggedCells = std::map<Cell*, std::string>;
 
 private:
 	//Geometry geo;
 	std::fstream file;
 	std::string filename;
+
+	Clustering &clustering;
 
 	// Move to enums?
 	//const std::string DELIM = ",";
@@ -57,14 +57,14 @@ public:
 		std::vector<std::string> cluster_id_vec;
 	};
 
-	ClusterWriter(std::string _filename, std::ios_base::openmode _mode) : filename(_filename), mode(_mode){}
+	ClusterWriter(Clustering &_clustering, std::string _filename, std::ios_base::openmode _mode) : clustering(_clustering), filename(_filename), mode(_mode){}
 	bool open();
 	bool close();
 	
 	// Write
-	bool write_event(TaggedCells &cells, const long event_number);
+	bool write_event(const long event_number);
 	bool write_event_header(const long event_number);
-	bool write_line(const double &x, const double &y, const double &value, const std::string cluster_id);
+	bool write_event_line(const double &x, const double &y, const double &value, const std::string cluster_id);
 	bool write_metadata();
 
 	// Read

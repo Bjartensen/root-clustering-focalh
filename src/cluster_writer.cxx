@@ -1,8 +1,6 @@
 #include "cluster_writer.h"
 
-						#include <iostream>
-
-bool ClusterWriter::write_event(TaggedCells &cells, const long event_number){
+bool ClusterWriter::write_event(const long event_number){
 
 	if (mode != std::ios_base::out) return false;
 	if (!file.is_open()) return false;
@@ -13,15 +11,17 @@ bool ClusterWriter::write_event(TaggedCells &cells, const long event_number){
 	write_event_header(event_number);
 
 	// Write event
-	for (TaggedCells::iterator it = cells.begin(); it != cells.end(); it++){
-		write_line(it->first->get_x(), it->first->get_y(), it->first->get_value(), it->second);
+	//for (auto it = cells.begin(); it != cells.end(); it++){
+	auto cells = clustering.get_tagged_cells();
+	for (auto it = cells->begin(); it != cells->end(); it++){
+		write_event_line(it->first->get_x(), it->first->get_y(), it->first->get_value(), it->second);
 	}
 
 	return true;
 }
 
 
-bool ClusterWriter::write_line(const double &x, const double &y, const double &value, const std::string cluster_id){
+bool ClusterWriter::write_event_line(const double &x, const double &y, const double &value, const std::string cluster_id){
 	if (mode != std::ios_base::out) return false;
 	if (!file) return false;
 	file << x << DELIM << y << DELIM << value << DELIM << cluster_id << EOL;
@@ -70,7 +70,6 @@ bool ClusterWriter::read_event(Event &event, long &event_number){
 		// if another event header
 		if (is_event_header(line)){
 			file.seekg(file_pos, std::ios_base::beg);
-			std::cout << "Another event!" << std::endl;
 			break;
 		}
 
@@ -81,9 +80,6 @@ bool ClusterWriter::read_event(Event &event, long &event_number){
 		event.y_vec.push_back(el.y);
 		event.val_vec.push_back(el.val);
 		event.cluster_id_vec.push_back(el.cluster_id);
-
-
-		//std::cout << el.x << "," << el.y << "," << el.val << "," << el.cluster_id << std::endl;
 
 		file_pos = file.tellg();
 	}

@@ -2,7 +2,6 @@
 #define CLUSTERING_H
 
 #include "grid.h"
-#include <memory>
 #include <map>
 #include <set>
 
@@ -23,6 +22,7 @@ public:
 	Clustering(Grid &_g);
 	Clustering() {g=nullptr;}
 	virtual bool tag() = 0;
+	virtual std::string name() = 0;
 
 	// Sets a Grid to the object. Used by constructors to initialize.
 	void set_grid(Grid &_g);
@@ -54,7 +54,7 @@ public:
 	std::vector<std::string> get_remaining_clusters(std::vector<std::string> &exclude_clusters);
 	std::pair<double, double> cluster_center_of_mass(std::string tag);
 
-	bool cluster_events(TTree &tree, unsigned long start, unsigned long end);
+	//bool cluster_events(TTree &tree, unsigned long start, unsigned long end);
 
 };
 

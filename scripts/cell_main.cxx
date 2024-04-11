@@ -2,7 +2,6 @@
 #include "modified_aggregation.h"
 #include <iostream>
 #include <TCanvas.h>
-#include <TTree.h>
 #include <TFile.h>
 #include "TStyle.h"
 #include "TColor.h"
@@ -49,6 +48,7 @@ double standard_error(std::vector<double> &samples);
 
 
 void test_cluster_writer(std::string file);
+void test_cluster_events(std::string file);
 
 
 void save_point_plot(std::vector<std::unique_ptr<TGraphErrors>> &point_plots, std::string x_label, std::string y_label, std::string legend_title, std::string filename);
@@ -112,7 +112,8 @@ int main(int argc, char* argv[]){
 
 	//MA_reconstructed_energies(folder, 800.0, 10);
 	//analysis(folder);
-	test_cluster_writer(file);
+	//test_cluster_writer(file);
+	test_cluster_events(file);
 
 
 
@@ -120,6 +121,32 @@ int main(int argc, char* argv[]){
 	return 0;
 }
 
+
+void test_cluster_events(std::string file){
+	FoCalH focal;
+	Grid &g = focal.get_grid();
+
+	std::cout << "Testing ClusterEvents" << std::endl;
+
+	std::unique_ptr<TFile> f = std::make_unique<TFile>(file.c_str(), "READ");
+	std::cout << "Opening file: " << file << std::endl;
+
+
+
+	// Prepare Clustering objects
+	std::vector<std::unique_ptr<Clustering>> clustering_vec;
+	std::unique_ptr<Clustering> ma1;
+	ma1 = std::make_unique<ModifiedAggregation>(0, 0);
+	std::unique_ptr<Clustering> ma2;
+	ma2 = std::make_unique<ModifiedAggregation>(800, 100);
+	clustering_vec.push_back(std::move(ma1));
+	clustering_vec.push_back(std::move(ma2));
+
+	ClusterEvents clusterizer(file);
+	clusterizer.open();
+	clusterizer.run_clustering(clustering_vec, g, 0, 1000);
+
+}
 
 void test_cluster_writer(std::string file){
 	FoCalH focal;
@@ -138,7 +165,12 @@ void test_cluster_writer(std::string file){
 	std::vector<double> grid_adc_sums;
 	std::vector<double> leftover_grid_adc_sums;
 
-	ClusterWriter writer(filename, std::ios_base::out);
+	double seed_threshold = 0;
+	double aggregation_threshold = 0;
+	//ModifiedAggregation ma(g, seed_threshold, aggregation_threshold);
+	ModifiedAggregation ma(seed_threshold, aggregation_threshold);
+
+	ClusterWriter writer(ma, filename, std::ios_base::out);
 	writer.open();
 
 	// For each event
@@ -148,10 +180,9 @@ void test_cluster_writer(std::string file){
 
 		g.fill_grid_ttree_entry(*t, e, true);
 
-		double seed_threshold = 0;
-		double aggregation_threshold = 0;
-		//ModifiedAggregation ma(g, seed_threshold, aggregation_threshold);
-		ModifiedAggregation ma(seed_threshold, aggregation_threshold);
+
+		save_heatmap(g, "heatmap_"+std::to_string(e)+"_write.png", std::to_string(e));
+
 		ma.set_grid(g);
 		
 		// Any clusters found
@@ -177,7 +208,7 @@ void test_cluster_writer(std::string file){
 
 
 
-		if (!writer.write_event(*ma.get_tagged_cells(), e))
+		if (!writer.write_event(e))
 			std::cout << "Couldn't write" << std::endl;
 
 
@@ -189,20 +220,24 @@ void test_cluster_writer(std::string file){
 
 	// Try reading in the file now
 
-	ClusterWriter reader(filename, std::ios_base::in);
+	ClusterWriter reader(ma, filename, std::ios_base::in);
 	reader.open();
 
 	ClusterWriter::Event ev;
 	long evnum;
 
+
+	FoCalH focal_file;
+	Grid &g_read = focal_file.get_grid();
+
 	if (reader.read_event(ev, evnum)){
 		std::cout << "Read event! Event number: " << evnum << std::endl;
 		for (int i = 0; i < ev.x_vec.size(); i++){
-			std::cout << ev.x_vec.at(i) << "," << ev.y_vec.at(i) << "," << ev.val_vec.at(i) << ","  << ev.cluster_id_vec.at(i) << std::endl;
-
+			g_read.Fill(ev.x_vec.at(i), ev.y_vec.at(i), ev.val_vec.at(i));
 		}
 	}
 
+	save_heatmap(g_read, "heatmap_read.png", std::to_string(evnum));
 	reader.close();
 
 

@@ -87,3 +87,15 @@ Cell* ModifiedAggregation::find_maximum_untagged(){
 		return nullptr;
 	return max;
 }
+
+
+
+std::string ModifiedAggregation::name(){
+	const char DELIM = '_';
+	std::string algo = "ma";
+	std::string pars = "";
+	pars += std::to_string(int(seed_threshold));
+	pars += DELIM;
+	pars += std::to_string(int(aggregation_threshold));
+	return algo+DELIM+pars;
+}
