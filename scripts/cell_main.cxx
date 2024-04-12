@@ -123,6 +123,8 @@ int main(int argc, char* argv[]){
 
 
 void test_cluster_events(std::string file){
+
+
 	FoCalH focal;
 	Grid &g = focal.get_grid();
 
@@ -130,8 +132,6 @@ void test_cluster_events(std::string file){
 
 	std::unique_ptr<TFile> f = std::make_unique<TFile>(file.c_str(), "READ");
 	std::cout << "Opening file: " << file << std::endl;
-
-
 
 	// Prepare Clustering objects
 	std::vector<std::unique_ptr<Clustering>> clustering_vec;
@@ -144,9 +144,37 @@ void test_cluster_events(std::string file){
 
 	ClusterEvents clusterizer(file);
 	clusterizer.open();
-	clusterizer.run_clustering(clustering_vec, g, 0, 1000);
+	//clusterizer.run_clustering(clustering_vec, g, 0, 1000);
+	clusterizer.close();
+
+
+
+
+	// Read in large clustered file to gauge how fast it reads
+	// and how fast it is to e.g. sum over elements.
+	
+
+	std::string filename = "ma_800_100";
+	ClusterWriter reader(*ma1, filename, std::ios_base::in);
+	reader.open();
+	ClusterWriter::Event ev;
+	long evnum;
+	
+	long count = 0;
+	double sum = 0;
+	while(reader.read_event(ev, evnum)){
+		for (const auto &v : ev.val_vec) sum+=v;
+		count++;
+	}
+	std::cout << count << "," << sum << std::endl;
+
 
 }
+
+
+
+
+
 
 void test_cluster_writer(std::string file){
 	FoCalH focal;

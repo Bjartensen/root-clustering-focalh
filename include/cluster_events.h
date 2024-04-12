@@ -49,6 +49,4 @@ public:
 };
 
 
-
-
 #endif // CLUSTER_EVENTS_H

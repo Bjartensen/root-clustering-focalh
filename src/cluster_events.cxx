@@ -1,7 +1,5 @@
 #include "cluster_events.h"
 
-
-
 bool ClusterEvents::run_clustering(vec_cl_ptr &clustering_vec, Grid &g, unsigned long start, unsigned long end){
 
 	if (clustering_vec.size() == 0) return false;
