@@ -15,6 +15,7 @@
 #include <THStack.h>
 #include "focalh.h"
 
+#include "definitions.h"
 
 #include "cluster_events.h"
 

@@ -8,24 +8,24 @@
 #include "cell.h"
 #include <map>
 #include "clustering.h"
-
+#include "TFile.h"
+#include "definitions.h"
 
 class ClusterWriter{
 
 using Vec = std::vector<double>;
 using StringVec = std::vector<std::string>;
 
-// A bit spooky that this class should know this structure from Clustering
 
 private:
 	//Geometry geo;
 	std::fstream file;
 	std::string filename;
 
+	TFile clustered;
+
 	Clustering &clustering;
 
-	// Move to enums?
-	//const std::string DELIM = ",";
 	const char DELIM = ',';
 	
 	const std::string EOL = "\n";
@@ -67,7 +67,7 @@ public:
 	bool write_event_line(const double &x, const double &y, const double &value, const std::string cluster_id);
 	bool write_metadata();
 
-	// Read
+	// Read -- should eventually be its own object
 	bool read_event(Event &event, long &event_number);
 	bool read_event_line(std::string line, EventLine &event_line);
 	bool read_metadata();
