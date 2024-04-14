@@ -1,30 +1,105 @@
 #include "cluster_writer.h"
+#include "definitions.h"
+
+
+#include <iostream>
+
+bool ClusterWriter::open(){
+
+	clustered_tfile = std::make_unique<TFile>(filename.c_str(), "RECREATE");
+	ttree = std::make_unique<TTree>(TTreeClustered::TreeName.c_str(), TTreeClustered::TreeTitle.c_str());
+	//clustered_tfile->cd();
+
+	if (!set_ttree_branches()) return false;
+
+	if (!clustered_tfile) return false;
+	if (clustered_tfile->IsZombie()) return false;
+
+	/*
+	file.open(filename+CLUSTER_EXT, mode);
+	if (!file) return false;
+	*/
+
+
+
+	return true;
+}
+
+bool ClusterWriter::close(){
+	//file.close();
+	
+
+	ttree->Print();
+	clustered_tfile->cd();
+	ttree->Write();
+	ttree.release();
+	//clustered_tfile->Write();
+	//clustered_tfile->Close();
+	return true;
+}
+
 
 bool ClusterWriter::write_event(const long event_number){
 
-	if (mode != std::ios_base::out) return false;
-	if (!file.is_open()) return false;
-	if (!file) return false;
+
+	//if (mode != std::ios_base::out) return false;
+	//if (!file.is_open()) return false;
+	//if (!file) return false;
+
+
+	// Set tree branches
+	// Get Grid from Clustering
+	// Loop over Grid cells
+	// Match cells to Clustering tagged cells
+
+
+
+	// Hold on, move the set branch etc to another function that
+	// does it once, then fill event
+
+	// Damn, I want this in another function...
+
+
+
+
+	clustered_tfile->cd(); // I think I need this
+
+	// ADD SOME SET ADDRESS??
+	// https://root.cern.ch/doc/master/classTTree.html#addingacolumnofstl
+	//ttree->Branch(TTreeClustered::x_branch.c_str(), &x_pos);
+
+
 
 
 	// Write event header
-	write_event_header(event_number);
+	//write_event_header(event_number);
 
 	// Write event
 	//for (auto it = cells.begin(); it != cells.end(); it++){
 	auto cells = clustering.get_tagged_cells();
 	for (auto it = cells->begin(); it != cells->end(); it++){
-		write_event_line(it->first->get_x(), it->first->get_y(), it->first->get_value(), it->second);
+		//write_event_line(it->first->get_x(), it->first->get_y(), it->first->get_value(), it->second);
+		
+		x_pos.push_back(it->first->get_x());
+		y_pos.push_back(it->first->get_y());
+		value.push_back(it->first->get_value());
+		class_label.push_back(1);
+		cluster.push_back(it->second);
 	}
+
+	ttree->Fill();
+	clear_containers();
+	//ttree->Write();
+	//clustered_tfile->Write();
 
 	return true;
 }
 
 
-bool ClusterWriter::write_event_line(const double &x, const double &y, const double &value, const std::string cluster_id){
+bool ClusterWriter::write_event_line(double x, double y, double _value, std::string _cluster){
 	if (mode != std::ios_base::out) return false;
 	if (!file) return false;
-	file << x << DELIM << y << DELIM << value << DELIM << cluster_id << EOL;
+	file << x << DELIM << y << DELIM << _value << DELIM << _cluster << EOL;
 	return true;
 }
 
@@ -36,11 +111,29 @@ bool ClusterWriter::write_event_header(const long event_number){
 	return true;
 }
 
+bool ClusterWriter::set_ttree_branches(){
+
+	ttree->Branch(TTreeClustered::x_branch.c_str(), &x_pos);
+	ttree->Branch(TTreeClustered::y_branch.c_str(), &y_pos);
+	ttree->Branch(TTreeClustered::value_branch.c_str(), &value);
+	ttree->Branch(TTreeClustered::class_branch.c_str(), &class_label);
+	ttree->Branch(TTreeClustered::cluster_branch.c_str(), &cluster);
+
+	return true;
+}
 
 
-// Take in first line. If not of header format, return false.
-// Else, loop until next header format or EOF? How can I know
-// when the next header format line is without consuming it?
+bool ClusterWriter::clear_containers(){
+
+
+	x_pos.clear();
+	y_pos.clear();
+	value.clear();
+	class_label.clear();
+	cluster.clear();
+	return true;
+}
+
 bool ClusterWriter::read_event(Event &event, long &event_number){
 	if (mode != std::ios_base::in) return false;
 	if (!file.is_open()) return false;
@@ -53,26 +146,14 @@ bool ClusterWriter::read_event(Event &event, long &event_number){
 	// Check if event header
 	if (!read_event_header(line, event_number)) return false;
 
-	// Loop until next header or EOF
-	// Be mindful that you are consuming the file. Need to move one back
-	// after finding the the next event.
-
-	//Event e;
 	EventLine el;
 	int file_pos = file.tellg();
 
 	while (std::getline(file, line)){
-		// move seek one back
-		// break
-
-
-
-		// if another event header
 		if (is_event_header(line)){
 			file.seekg(file_pos, std::ios_base::beg);
 			break;
 		}
-
 
 		// Fill event
 		read_event_line(line, el);
@@ -86,7 +167,6 @@ bool ClusterWriter::read_event(Event &event, long &event_number){
 
 	return true;
 }
-
 
 
 bool ClusterWriter::read_event_line(std::string line, EventLine &event_line){
@@ -125,14 +205,3 @@ bool ClusterWriter::is_event_header(std::string &line){
 	return true;
 }
 
-bool ClusterWriter::open(){
-	file.open(filename+CLUSTER_EXT, mode);
-	if (!file) return false;
-	return true;
-}
-
-
-bool ClusterWriter::close(){
-	file.close();
-	return true;
-}

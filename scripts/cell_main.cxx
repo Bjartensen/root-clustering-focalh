@@ -131,8 +131,8 @@ void test_cluster_events(std::string file){
 
 	std::cout << "Testing ClusterEvents" << std::endl;
 
-	std::unique_ptr<TFile> f = std::make_unique<TFile>(file.c_str(), "READ");
-	std::cout << "Opening file: " << file << std::endl;
+	//std::unique_ptr<TFile> f = std::make_unique<TFile>(file.c_str(), "READ");
+	//std::cout << "Opening file: " << file << std::endl;
 
 	// Prepare Clustering objects
 	std::vector<std::unique_ptr<Clustering>> clustering_vec;
@@ -145,7 +145,7 @@ void test_cluster_events(std::string file){
 
 	ClusterEvents clusterizer(file);
 	clusterizer.open();
-	//clusterizer.run_clustering(clustering_vec, g, 0, 1000);
+	clusterizer.run_clustering(clustering_vec, g, 0, 1000);
 	clusterizer.close();
 
 
@@ -155,7 +155,22 @@ void test_cluster_events(std::string file){
 	// and how fast it is to e.g. sum over elements.
 	
 
+
 	std::string filename = "ma_800_100";
+
+
+	std::unique_ptr<TFile> f_read = std::make_unique<TFile>(filename.c_str(), "READ");
+	auto t = static_cast<TTree*>(f_read->Get(TTreeClustered::TreeName.c_str()));
+
+	//t->Print();
+	
+	std::cout << t->GetNbranches() << std::endl;
+	for (int e = 0; e < t->GetEntries(); e++){
+
+
+	}
+
+	/*
 	ClusterWriter reader(*ma1, filename, std::ios_base::in);
 	reader.open();
 	ClusterWriter::Event ev;
@@ -168,6 +183,7 @@ void test_cluster_events(std::string file){
 		count++;
 	}
 	std::cout << count << "," << sum << std::endl;
+	*/
 
 
 }

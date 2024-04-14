@@ -22,7 +22,8 @@ private:
 	std::fstream file;
 	std::string filename;
 
-	TFile clustered;
+	std::unique_ptr<TFile> clustered_tfile;
+	std::unique_ptr<TTree> ttree;
 
 	Clustering &clustering;
 
@@ -33,6 +34,11 @@ private:
 	const std::string CLUSTER_META_EXT = ".clustermeta";
 	const std::string EVENT_HEADER_START = "E:";
 
+	TTreeClustered::x_type x_pos;
+	TTreeClustered::y_type y_pos;
+	TTreeClustered::value_type value;
+	TTreeClustered::class_type class_label;
+	TTreeClustered::cluster_type cluster;
 
 	struct EventLine{
 		double x;
@@ -64,8 +70,11 @@ public:
 	// Write
 	bool write_event(const long event_number);
 	bool write_event_header(const long event_number);
-	bool write_event_line(const double &x, const double &y, const double &value, const std::string cluster_id);
+	bool write_event_line(double x, double y, double _value, std::string _cluster);
 	bool write_metadata();
+
+	bool set_ttree_branches();
+	bool clear_containers();
 
 	// Read -- should eventually be its own object
 	bool read_event(Event &event, long &event_number);

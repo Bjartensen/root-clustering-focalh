@@ -1,5 +1,7 @@
 #include "cluster_events.h"
 
+#include <iostream>
+
 bool ClusterEvents::run_clustering(vec_cl_ptr &clustering_vec, Grid &g, unsigned long start, unsigned long end){
 
 	if (clustering_vec.size() == 0) return false;
@@ -12,6 +14,8 @@ bool ClusterEvents::run_clustering(vec_cl_ptr &clustering_vec, Grid &g, unsigned
 	std::unique_ptr<TTree> ttree(events_file->Get<TTree>(TREE_NAME.c_str()));
 	if (end == 0) end = ttree->GetEntries();
 	if (end - start <= 0) return false;
+	std::cout << ttree->GetNbranches() << std::endl;
+
 
 	// For each event, loop through clustering_vec and perform clustering
 	for (long e = start; e < end; e++){
