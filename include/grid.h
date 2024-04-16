@@ -5,6 +5,7 @@
 #include <memory>
 #include <TH2Poly.h>
 #include <TTree.h>
+#include "definitions.h"
 
 
 /*
@@ -39,6 +40,10 @@ public:
 
 	//bool fill_grid_ttree_entry(TTree& t, Grid& g, int e, bool override_values);
 	bool fill_grid_ttree_entry(TTree& t, int e, bool override_values);
+	// This needs to be cleaned up. It's because the already-created testbeam
+	// and simulation files have different branch addresses than the one I have
+	// now defined in the definitions.h
+	bool fill_grid_ttree_entry2(TTree& t, int e, bool override_values);
 };
 
 #endif // GRID_H

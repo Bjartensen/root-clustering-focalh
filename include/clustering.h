@@ -26,6 +26,7 @@ public:
 
 	// Sets a Grid to the object. Used by constructors to initialize.
 	void set_grid(Grid &_g);
+	void clear_all();
 
 	Grid* get_grid(){return g;}
 

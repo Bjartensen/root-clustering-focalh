@@ -26,14 +26,9 @@ bool ClusterWriter::open(){
 }
 
 bool ClusterWriter::close(){
-	//file.close();
-	
-
-	ttree->Print();
 	clustered_tfile->cd();
 	ttree->Write();
 	ttree.release();
-	//clustered_tfile->Write();
 	//clustered_tfile->Close();
 	return true;
 }
@@ -42,33 +37,7 @@ bool ClusterWriter::close(){
 bool ClusterWriter::write_event(const long event_number){
 
 
-	//if (mode != std::ios_base::out) return false;
-	//if (!file.is_open()) return false;
-	//if (!file) return false;
-
-
-	// Set tree branches
-	// Get Grid from Clustering
-	// Loop over Grid cells
-	// Match cells to Clustering tagged cells
-
-
-
-	// Hold on, move the set branch etc to another function that
-	// does it once, then fill event
-
-	// Damn, I want this in another function...
-
-
-
-
 	clustered_tfile->cd(); // I think I need this
-
-	// ADD SOME SET ADDRESS??
-	// https://root.cern.ch/doc/master/classTTree.html#addingacolumnofstl
-	//ttree->Branch(TTreeClustered::x_branch.c_str(), &x_pos);
-
-
 
 
 	// Write event header
@@ -76,6 +45,14 @@ bool ClusterWriter::write_event(const long event_number){
 
 	// Write event
 	//for (auto it = cells.begin(); it != cells.end(); it++){
+	
+
+	// I think I should get the Grid and loop over all cells
+	// and try and match them with Clustering tagged cells.
+	// If they are not found I set the tag to 0 or -1.
+
+
+	clear_containers();
 	auto cells = clustering.get_tagged_cells();
 	for (auto it = cells->begin(); it != cells->end(); it++){
 		//write_event_line(it->first->get_x(), it->first->get_y(), it->first->get_value(), it->second);
@@ -87,8 +64,8 @@ bool ClusterWriter::write_event(const long event_number){
 		cluster.push_back(it->second);
 	}
 
+
 	ttree->Fill();
-	clear_containers();
 	//ttree->Write();
 	//clustered_tfile->Write();
 
@@ -124,8 +101,6 @@ bool ClusterWriter::set_ttree_branches(){
 
 
 bool ClusterWriter::clear_containers(){
-
-
 	x_pos.clear();
 	y_pos.clear();
 	value.clear();

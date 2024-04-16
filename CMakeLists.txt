@@ -31,7 +31,9 @@ add_library(clustering_util SHARED
 	src/focalh.cxx
 	src/cluster_events.cxx
 	src/cluster_writer.cxx
+	src/cluster_reader.cxx
 	src/cluster_analysis.cxx
+	src/histogram_analysis.cxx
 	include/cell.h
 	include/grid.h
 	include/clustering.h
@@ -41,7 +43,9 @@ add_library(clustering_util SHARED
 	include/focalh.h
 	include/cluster_events.h
 	include/cluster_writer.h
+	include/cluster_reader.h
 	include/cluster_analysis.h
+	include/histogram_analysis.h
 	include/definitions.h
 )
 

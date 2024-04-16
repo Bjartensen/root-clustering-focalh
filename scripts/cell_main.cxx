@@ -18,6 +18,9 @@
 #include "definitions.h"
 
 #include "cluster_events.h"
+#include "cluster_analysis.h"
+#include "cluster_reader.h"
+#include "histogram_analysis.h"
 
 const double SATURATION_VALUE = 4096;
 //const double SATURATION_VALUE = 32000;
@@ -49,7 +52,10 @@ double standard_error(std::vector<double> &samples);
 
 
 void test_cluster_writer(std::string file);
+void test_cluster_reader();
 void test_cluster_events(std::string file);
+void test_cluster_analysis();
+void test_histogram_analysis();
 
 
 void save_point_plot(std::vector<std::unique_ptr<TGraphErrors>> &point_plots, std::string x_label, std::string y_label, std::string legend_title, std::string filename);
@@ -88,7 +94,7 @@ int main(int argc, char* argv[]){
 	auto t = static_cast<TTree*>(f->Get("T"));
 
 
-	for (int i = 0; i < 10; i++){
+	for (int i = 0; i < 0; i++){
 		g.fill_grid_ttree_entry(*t, i, true);
 		std::string temp_filename_fig = "../data/focalsim/pi_plus_1000e_deg0/" + std::to_string(i) + IMAGE_EXTENSION;
 		save_heatmap(g, temp_filename_fig, "250 GeV, pi+");
@@ -114,14 +120,45 @@ int main(int argc, char* argv[]){
 	//MA_reconstructed_energies(folder, 800.0, 10);
 	//analysis(folder);
 	//test_cluster_writer(file);
+
+	//test_cluster_reader();
+
+
+	//test_cluster_analysis();
+
 	test_cluster_events(file);
-
-
+	test_histogram_analysis();
 
 
 	return 0;
 }
 
+void test_histogram_analysis(){
+
+	std::cout << "Testing HistogramAnalysis" << std::endl;
+
+	std::string test1 = "adsf";
+	std::string test2 = "ma_800_100.root";
+	std::string test3 = Folders::ClusteredFolder+"/" + "ma_800_100.root";
+	std::string test4 = Folders::ClusteredFolder+"/" + "ma_0_0.root";
+	std::vector<std::string> test_vec;
+	test_vec.push_back(test1);
+	test_vec.push_back(test2);
+	test_vec.push_back(test3);
+	test_vec.push_back(test4);
+
+	HistogramAnalysis ana;
+
+	for (const auto &v : test_vec){
+		if (ana.add_file(v))
+			std::cout << "Added file: " << v << std::endl;
+		else
+			std::cout << "Couldn't add file: " << v << std::endl;
+	}
+
+	ana.calculate_sums();
+
+}
 
 void test_cluster_events(std::string file){
 
@@ -145,7 +182,7 @@ void test_cluster_events(std::string file){
 
 	ClusterEvents clusterizer(file);
 	clusterizer.open();
-	clusterizer.run_clustering(clustering_vec, g, 0, 1000);
+	clusterizer.run_clustering(clustering_vec, g, 0, 200);
 	clusterizer.close();
 
 
@@ -156,7 +193,7 @@ void test_cluster_events(std::string file){
 	
 
 
-	std::string filename = "ma_800_100";
+	std::string filename = Folders::ClusteredFolder+"/"+"ma_800_100.root";
 
 
 	std::unique_ptr<TFile> f_read = std::make_unique<TFile>(filename.c_str(), "READ");
@@ -164,10 +201,8 @@ void test_cluster_events(std::string file){
 
 	//t->Print();
 	
-	std::cout << t->GetNbranches() << std::endl;
 	for (int e = 0; e < t->GetEntries(); e++){
-
-
+		//
 	}
 
 	/*
@@ -187,6 +222,81 @@ void test_cluster_events(std::string file){
 
 
 }
+
+
+void test_cluster_reader(){
+	std::cout << "Testing ClusterReader" << std::endl;
+
+	std::string test1 = "adsf";
+	std::string test2 = "ma_800_100.root";
+	std::string test3 = Folders::ClusteredFolder+"/" + "ma_800_100.root";
+	std::string test4 = Folders::ClusteredFolder+"/" + "ma_0_0.root";
+	std::vector<std::string> test_vec;
+	test_vec.push_back(test1);
+	test_vec.push_back(test2);
+	test_vec.push_back(test3);
+	test_vec.push_back(test4);
+
+	ClusterReader reader(test3);
+	if (!reader.open()) std::cout << "couldn't open" << std::endl;
+	
+	TTreeClustered::EventPtr e;
+
+	int cnt = 0;
+	while(reader.read_event(e)){
+		cnt++;
+		//std::cout << "x.size(): " << e.x->size() << std::endl;
+	}
+	std::cout << "Read " << cnt << " entries." << std::endl;
+
+	reader.read_event(e,0);
+	
+	FoCalH focal;
+	Grid &g = focal.get_grid();
+
+
+	g.fill_grid_ttree_entry2(*reader.get_ttree(), 0, true);
+	save_heatmap(g, "heatmap_"+std::to_string(0)+"_reader.png", std::to_string(0));
+
+	// should try and plot a Grid
+	
+
+	reader.close();
+}
+
+void test_cluster_analysis(){
+
+	std::string test1 = "adsf";
+	std::string test2 = "ma_800_100.root";
+	std::string test3 = Folders::ClusteredFolder+"/" + "ma_800_100.root";
+	std::string test4 = Folders::ClusteredFolder+"/" + "ma_0_0.root";
+	std::vector<std::string> test_vec;
+	test_vec.push_back(test1);
+	test_vec.push_back(test2);
+	test_vec.push_back(test3);
+	test_vec.push_back(test4);
+
+	ClusterAnalysis ana;
+
+	for (const auto &v : test_vec){
+		if (ana.add_file(v))
+			std::cout << "Added file: " << v << std::endl;
+		else
+			std::cout << "Couldn't add file: " << v << std::endl;
+	}
+	std::cout << ana.show_files() << std::endl;
+
+
+	TTreeClustered::EventPtr e;
+	ClusterReader reader(test4);
+	reader.open();
+	reader.read_event(e);
+	std::cout << e.x->size() << std::endl;
+	reader.close();
+
+}
+
+
 
 
 

@@ -6,6 +6,7 @@
 #include <TFile.h>
 #include <vector>
 #include <memory>
+#include "definitions.h"
 
 class ClusterEvents{
 
@@ -18,7 +19,6 @@ private:
 	// vector of Clustering?
 	
 	std::string tfile_options = "READ";
-	std::string TREE_NAME = "T"; // Should be moved to some header definition
 
 public:
 	ClusterEvents(std::string _filename) : filename(_filename) {}
@@ -30,6 +30,8 @@ public:
 
 	bool open();
 	bool close();
+
+	std::string get_full_path(std::string algo_pars);
 
 
 	void setup_writers(

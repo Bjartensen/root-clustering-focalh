@@ -163,3 +163,25 @@ bool Grid::fill_grid_ttree_entry(TTree& t, int e, bool override_values){
 	return true;
 }
 
+bool Grid::fill_grid_ttree_entry2(TTree& t, int e, bool override_values){
+
+	TTreeClustered::EventPtr event;
+	//std::vector<Double_t>* particle = nullptr;
+
+
+	t.SetBranchAddress(TTreeClustered::x_branch.c_str(), &event.x);
+	t.SetBranchAddress(TTreeClustered::y_branch.c_str(), &event.y);
+	t.SetBranchAddress(TTreeClustered::value_branch.c_str(), &event.value);
+	//t.SetBranchAddress("particle", &particle);
+
+	t.GetEntry(e);
+
+	for (int i = 0; i < event.x->size(); i++){
+		if (override_values)
+			SetCellValues(event.x->at(i), event.y->at(i), event.value->at(i));
+		else
+			Fill(event.x->at(i), event.y->at(i), event.value->at(i));
+	}
+
+	return true;
+}

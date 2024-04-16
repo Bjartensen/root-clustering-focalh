@@ -2,9 +2,16 @@
 #define DEFINITIONS_H
 
 #include <string>
+#include <vector>
 
-using float_type = double;
-using adc_type = unsigned int;
+
+
+namespace General{
+	const std::string RootExtension = ".root";
+	using float_type = double;
+	using adc_type = unsigned int;
+	using energy_type = unsigned int;
+}
 
 namespace Folders{
 	const std::string DataFolder = "../data";
@@ -30,11 +37,27 @@ namespace TTreeClustered{
 	const std::string cluster_branch = "cluster";
 
 	// Types
-	using x_type = std::vector<float_type>;
-	using y_type = std::vector<float_type>;
+	using x_type = std::vector<General::float_type>;
+	using y_type = std::vector<General::float_type>;
 	using value_type = std::vector<unsigned int>;
 	using class_type = std::vector<unsigned int>;
 	using cluster_type = std::vector<std::string>;
+
+	struct Event{
+		x_type x;
+		y_type y;
+		value_type value;
+		class_type class_label;
+		cluster_type cluster;
+	};
+
+	struct EventPtr{
+		x_type* x = nullptr;
+		y_type* y = nullptr;
+		value_type* value = nullptr;
+		class_type* class_label = nullptr;
+		cluster_type* cluster = nullptr;
+	};
 }
 
 namespace TFileClustered{

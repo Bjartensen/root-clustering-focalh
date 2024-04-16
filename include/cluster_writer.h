@@ -13,9 +13,6 @@
 
 class ClusterWriter{
 
-using Vec = std::vector<double>;
-using StringVec = std::vector<std::string>;
-
 
 private:
 	//Geometry geo;

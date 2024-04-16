@@ -15,6 +15,10 @@ void Clustering::set_grid(Grid &_g){
 	}
 }
 
+void Clustering::clear_all(){
+	tagged_cells.clear();
+	untagged_cells.clear();
+}
 
 void Clustering::print_untagged(){
 	std::cout << "Size: " << untagged_cells.size() << std::endl;
