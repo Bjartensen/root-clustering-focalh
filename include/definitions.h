@@ -10,7 +10,17 @@ namespace General{
 	const std::string RootExtension = ".root";
 	using float_type = double;
 	using adc_type = unsigned int;
-	using energy_type = unsigned int;
+	using energy_type = int;
+
+
+	const std::string energy_tparameter = "energy";
+	const std::string source_tobj = "source";
+	const std::string description_tobj = "description";
+	struct EventsHeader{
+		energy_type Energy = 0;
+		std::string Source = "";
+		std::string Description = "";
+	};
 }
 
 namespace Folders{
@@ -22,6 +32,7 @@ namespace Folders{
 // Input TTree from focalsim or testbeam
 namespace TTreeData{
 	const std::string TreeName = "T";
+	const std::string Energy = "energy";
 	
 }
 

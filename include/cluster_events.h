@@ -4,6 +4,7 @@
 #include "clustering.h"
 #include "cluster_writer.h"
 #include <TFile.h>
+#include <TParameter.h>
 #include <vector>
 #include <memory>
 #include "definitions.h"
@@ -16,9 +17,10 @@ private:
 
 	std::unique_ptr<TFile> events_file;
 	std::string filename;
-	// vector of Clustering?
 	
 	std::string tfile_options = "READ";
+
+	General::EventsHeader header;
 
 public:
 	ClusterEvents(std::string _filename) : filename(_filename) {}
@@ -41,12 +43,10 @@ public:
 	bool cluster_event(vec_cl_ptr &clustering_vec);
 	bool write_event(std::vector<std::unique_ptr<ClusterWriter>> &writers, long event_number);
 
-	// Writes the clusters for each event to files.
-	bool write_short_format();
-
-
-	// Writes every cell and their tags to files.
-	bool write_long_format();
+	void set_events_header_energy(General::energy_type energy);
+	void set_events_header_source(std::string source);
+	void set_events_header_description(std::string description);
+	General::energy_type get_ttree_energy(TFile &f);
 
 };
 

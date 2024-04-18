@@ -2,12 +2,26 @@
 
 #include <iostream>
 
+bool ClusterEvents::open(){
+	events_file = std::make_unique<TFile>(filename.c_str(), tfile_options.c_str());
+	if (!events_file) return false;
+	if (events_file->IsZombie()) return false;
+	return true;
+}
+
+bool ClusterEvents::close(){
+	events_file->Close();
+	return true; // Meaningless...
+}
+
 bool ClusterEvents::run_clustering(vec_cl_ptr &clustering_vec, Grid &g, unsigned long start, unsigned long end){
 
 	if (clustering_vec.size() == 0) return false;
 
+	set_events_header_energy(get_ttree_energy(*events_file));
 	std::vector<std::unique_ptr<ClusterWriter>> writers;
 	setup_writers(writers, clustering_vec);
+
 
 	// Get tree and check for bounds
 	std::unique_ptr<TTree> ttree(events_file->Get<TTree>(TTreeData::TreeName.c_str()));
@@ -24,6 +38,7 @@ bool ClusterEvents::run_clustering(vec_cl_ptr &clustering_vec, Grid &g, unsigned
 
 	// Clean up
 	for (auto &v : writers) v->close();
+
 	return true;
 }
 
@@ -47,9 +62,13 @@ void ClusterEvents::setup_writers(
 
 	for (auto &v : clustering_vec){
 		std::unique_ptr<ClusterWriter> w;
-		std::string filename = get_full_path(v->name());
+		std::string filename = std::to_string(get_ttree_energy(*events_file));
+		filename += "_"+v->name();
+		filename = get_full_path(filename);
 		w = std::make_unique<ClusterWriter>(*v, filename, std::ios_base::out);
 		w->open();
+		w->set_events_header(header);
+		w->write_events_header();
 		writers.push_back(std::move(w));
 	}
 }
@@ -59,16 +78,22 @@ std::string ClusterEvents::get_full_path(std::string algo_pars){
 	return Folders::ClusteredFolder+"/"+algo_pars+General::RootExtension;
 }
 
-bool ClusterEvents::open(){
-	events_file = std::make_unique<TFile>(filename.c_str(), tfile_options.c_str());
-	if (!events_file) return false;
-	if (events_file->IsZombie()) return false;
-	return true;
+
+
+
+void ClusterEvents::set_events_header_energy(General::energy_type energy){
+	header.Energy = energy;
 }
 
-bool ClusterEvents::close(){
+void ClusterEvents::set_events_header_source(std::string source){
+	header.Source = source;
+}
 
-	// Close?
+void ClusterEvents::set_events_header_description(std::string description){
+	header.Description = description;
+}
 
-	return true;
+General::energy_type ClusterEvents::get_ttree_energy(TFile &f){
+	auto tparameter = static_cast<TParameter<int>*>(f.Get(TTreeData::Energy.c_str()));
+	return tparameter->GetVal();
 }

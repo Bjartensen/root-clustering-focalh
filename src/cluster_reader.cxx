@@ -46,3 +46,30 @@ void ClusterReader::set_ttree_branches(){
 TTree* ClusterReader::get_ttree(){
 	return ttree;
 }
+
+
+void ClusterReader::read_events_header(){
+
+	// Read objects
+	
+	// Get TParameter for energy
+	// Get source and use name
+	// Get description and use name
+
+
+	//TObject &energy = *clustered_tfile->Get(General::energy_tparameter.c_str());
+	TObject &source = *clustered_tfile->Get(General::source_tobj.c_str());
+	TObject &description = *clustered_tfile->Get(General::description_tobj.c_str());
+
+	//header.Energy = static_cast<TParameter<int>*>(energy).GetVal();
+	header.Energy = static_cast<TParameter<int>*>(clustered_tfile->Get(General::energy_tparameter.c_str()))->GetVal();
+	header.Source = source.GetName();
+	header.Description = description.GetName();
+
+
+}
+
+
+General::EventsHeader& ClusterReader::get_events_header(){
+	return header;
+}

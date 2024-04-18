@@ -73,20 +73,6 @@ bool ClusterWriter::write_event(const long event_number){
 }
 
 
-bool ClusterWriter::write_event_line(double x, double y, double _value, std::string _cluster){
-	if (mode != std::ios_base::out) return false;
-	if (!file) return false;
-	file << x << DELIM << y << DELIM << _value << DELIM << _cluster << EOL;
-	return true;
-}
-
-
-bool ClusterWriter::write_event_header(const long event_number){
-	if (mode != std::ios_base::out) return false;
-	if (!file) return false;
-	file << EVENT_HEADER_START << event_number << EOL;
-	return true;
-}
 
 bool ClusterWriter::set_ttree_branches(){
 
@@ -109,74 +95,15 @@ bool ClusterWriter::clear_containers(){
 	return true;
 }
 
-bool ClusterWriter::read_event(Event &event, long &event_number){
-	if (mode != std::ios_base::in) return false;
-	if (!file.is_open()) return false;
-	if (!file) return false;
-
-	// Read entire line
-	std::string line;
-	std::getline(file, line);
-
-	// Check if event header
-	if (!read_event_header(line, event_number)) return false;
-
-	EventLine el;
-	int file_pos = file.tellg();
-
-	while (std::getline(file, line)){
-		if (is_event_header(line)){
-			file.seekg(file_pos, std::ios_base::beg);
-			break;
-		}
-
-		// Fill event
-		read_event_line(line, el);
-		event.x_vec.push_back(el.x);
-		event.y_vec.push_back(el.y);
-		event.val_vec.push_back(el.val);
-		event.cluster_id_vec.push_back(el.cluster_id);
-
-		file_pos = file.tellg();
-	}
-
-	return true;
+void ClusterWriter::set_events_header(General::EventsHeader &h){
+	header = h;
 }
 
-
-bool ClusterWriter::read_event_line(std::string line, EventLine &event_line){
-	std::stringstream line_stream(line);
-	std::string str_x;
-	std::string str_y;
-	std::string str_val;
-	std::string str_cluster_id;
-
-	std::getline(line_stream, str_x, DELIM);
-	std::getline(line_stream, str_y, DELIM);
-	std::getline(line_stream, str_val, DELIM);
-	std::getline(line_stream, str_cluster_id, DELIM);
-
-	event_line.x = std::stod(str_x);
-	event_line.y = std::stod(str_y);
-	event_line.val = std::stod(str_val);
-	event_line.cluster_id = str_cluster_id;
-
-
-	return true;
+void ClusterWriter::write_events_header(){
+	TParameter<General::energy_type> energy(General::energy_tparameter.c_str(), header.Energy);
+	energy.Write();
+	TObjString source(header.Source.c_str());
+	source.Write(General::source_tobj.c_str());
+	TObjString description(header.Description.c_str());
+	description.Write(General::description_tobj.c_str());
 }
-
-
-bool ClusterWriter::read_event_header(std::string &line, long &event_number){
-	size_t match_pos = line.rfind(EVENT_HEADER_START);
-	if (match_pos == std::string::npos) return false;
-
-	line.erase(0, match_pos+EVENT_HEADER_START.size());
-	event_number = std::stol(line, 0);
-	return true;
-}
-
-bool ClusterWriter::is_event_header(std::string &line){
-	if (line.rfind(EVENT_HEADER_START) == std::string::npos) return false;
-	return true;
-}
-

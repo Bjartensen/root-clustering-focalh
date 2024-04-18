@@ -84,6 +84,8 @@ int main(int argc, char* argv[]){
 	//std::string file = "../data/testbeam/Run_3226_monocluster.root";
 	//std::string file = "../data/focalsim/pi_plus_10000e_deg0/250_10000_small.root";
 	std::string file = "../data/focalsim/pi_plus_1000e_deg0/250_1000_analysis.root";
+	std::string file2 = "../data/focalsim/pi_plus_1000e_deg0/60_1000_analysis.root";
+	std::string file3 = "../data/focalsim/pi_plus_1000e_deg0/350_1000_analysis.root";
 	//std::string file = "../data/focalsim/misc/250_1_analysis.root";
 	//std::string file = "../data/tstbeam/201_100_tb.root";
 	//std::string filename_fig = "../data/testbeam/OLD.png";
@@ -126,7 +128,10 @@ int main(int argc, char* argv[]){
 
 	//test_cluster_analysis();
 
-	test_cluster_events(file);
+	//test_cluster_events(file);
+	//test_cluster_events(file2);
+	//test_cluster_events(file3);
+
 	test_histogram_analysis();
 
 
@@ -137,15 +142,15 @@ void test_histogram_analysis(){
 
 	std::cout << "Testing HistogramAnalysis" << std::endl;
 
-	std::string test1 = "adsf";
-	std::string test2 = "ma_800_100.root";
-	std::string test3 = Folders::ClusteredFolder+"/" + "ma_800_100.root";
-	std::string test4 = Folders::ClusteredFolder+"/" + "ma_0_0.root";
+	std::string test1 = Folders::ClusteredFolder+"/" + "250_ma_800_100.root";
+	std::string test2 = Folders::ClusteredFolder+"/" + "60_ma_800_100.root";
+	std::string test3 = Folders::ClusteredFolder+"/" + "350_ma_800_100.root";
+	//std::string test4 = Folders::ClusteredFolder+"/" + "250_ma_0_0.root";
 	std::vector<std::string> test_vec;
 	test_vec.push_back(test1);
 	test_vec.push_back(test2);
 	test_vec.push_back(test3);
-	test_vec.push_back(test4);
+	//test_vec.push_back(test4);
 
 	HistogramAnalysis ana;
 
@@ -157,6 +162,7 @@ void test_histogram_analysis(){
 	}
 
 	ana.calculate_sums();
+	ana.squawk();
 
 }
 
@@ -182,43 +188,11 @@ void test_cluster_events(std::string file){
 
 	ClusterEvents clusterizer(file);
 	clusterizer.open();
-	clusterizer.run_clustering(clustering_vec, g, 0, 200);
+	clusterizer.set_events_header_source("mc");
+	clusterizer.set_events_header_description("Geant4 Monte-Carlo");
+	clusterizer.run_clustering(clustering_vec, g, 0, 0);
 	clusterizer.close();
 
-
-
-
-	// Read in large clustered file to gauge how fast it reads
-	// and how fast it is to e.g. sum over elements.
-	
-
-
-	std::string filename = Folders::ClusteredFolder+"/"+"ma_800_100.root";
-
-
-	std::unique_ptr<TFile> f_read = std::make_unique<TFile>(filename.c_str(), "READ");
-	auto t = static_cast<TTree*>(f_read->Get(TTreeClustered::TreeName.c_str()));
-
-	//t->Print();
-	
-	for (int e = 0; e < t->GetEntries(); e++){
-		//
-	}
-
-	/*
-	ClusterWriter reader(*ma1, filename, std::ios_base::in);
-	reader.open();
-	ClusterWriter::Event ev;
-	long evnum;
-	
-	long count = 0;
-	double sum = 0;
-	while(reader.read_event(ev, evnum)){
-		for (const auto &v : ev.val_vec) sum+=v;
-		count++;
-	}
-	std::cout << count << "," << sum << std::endl;
-	*/
 
 
 }
@@ -372,28 +346,6 @@ void test_cluster_writer(std::string file){
 	writer.close();
 
 
-
-	// Try reading in the file now
-
-	ClusterWriter reader(ma, filename, std::ios_base::in);
-	reader.open();
-
-	ClusterWriter::Event ev;
-	long evnum;
-
-
-	FoCalH focal_file;
-	Grid &g_read = focal_file.get_grid();
-
-	if (reader.read_event(ev, evnum)){
-		std::cout << "Read event! Event number: " << evnum << std::endl;
-		for (int i = 0; i < ev.x_vec.size(); i++){
-			g_read.Fill(ev.x_vec.at(i), ev.y_vec.at(i), ev.val_vec.at(i));
-		}
-	}
-
-	save_heatmap(g_read, "heatmap_read.png", std::to_string(evnum));
-	reader.close();
 
 
 }

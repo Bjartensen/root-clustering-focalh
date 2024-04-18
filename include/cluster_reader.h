@@ -3,6 +3,8 @@
 
 #include <TFile.h>
 #include <TTree.h>
+#include <TParameter.h>
+#include <TString.h>
 #include "definitions.h"
 #include <memory>
 #include <string>
@@ -14,6 +16,7 @@ private:
 	std::string filename;
 	unsigned long entry;
 	TTreeClustered::EventPtr event; // Event with pointers to x,y... etc
+	General::EventsHeader header;
 
 public:
 	ClusterReader(std::string _filename) : filename(_filename), entry(0){}
@@ -21,6 +24,10 @@ public:
 	bool close();
 	bool read_event(TTreeClustered::EventPtr &ev);
 	bool read_event(TTreeClustered::EventPtr &ev, unsigned long en);
+
+
+	void read_events_header();
+	General::EventsHeader& get_events_header();
 
 	TTree* get_ttree();
 

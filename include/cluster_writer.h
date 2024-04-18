@@ -9,6 +9,8 @@
 #include <map>
 #include "clustering.h"
 #include "TFile.h"
+#include "TParameter.h"
+#include "TObjString.h"
 #include "definitions.h"
 
 class ClusterWriter{
@@ -43,7 +45,8 @@ private:
 		double val;
 		std::string cluster_id;
 	};
-
+	
+	General::EventsHeader header;
 
 	// I don't see a reason for wanting both for the same file.
 	// I'll add blockers for when trying to access read or write
@@ -66,20 +69,15 @@ public:
 	
 	// Write
 	bool write_event(const long event_number);
-	bool write_event_header(const long event_number);
-	bool write_event_line(double x, double y, double _value, std::string _cluster);
-	bool write_metadata();
+	//bool write_event_header(const long event_number);
+	//bool write_event_line(double x, double y, double _value, std::string _cluster);
+
+	void set_events_header(General::EventsHeader &h);
+	void write_events_header();
+
 
 	bool set_ttree_branches();
 	bool clear_containers();
-
-	// Read -- should eventually be its own object
-	bool read_event(Event &event, long &event_number);
-	bool read_event_line(std::string line, EventLine &event_line);
-	bool read_metadata();
-	bool read_event_header(std::string &line, long &event_number);
-	bool is_event_header(std::string &line);
-
 };
 
 
