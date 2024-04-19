@@ -39,3 +39,36 @@ void HistogramAnalysis::squawk(){
 	}
 
 }
+
+
+void HistogramAnalysis::plot(std::string name, std::string title){
+  PlotHistogram hist;
+  hist.create_tcanvas(name, title);
+  hist.set_x_max(calculate_hist_x_max());
+  hist.set_bins(calculate_hist_bins());
+  hist.set_x_axis_label("Sum");
+  hist.set_y_axis_label("Count");
+  for (int i = 0; i < grid_sums.size(); i++){
+    hist.create_histogram(grid_sums.at(i).second, name, title);
+  }
+  hist.save_to_file("test");
+
+}
+
+
+double HistogramAnalysis::calculate_hist_x_max(){
+  double max = 0;
+  for (const auto &energy : grid_sums)
+    for (const auto &v : energy.second)
+      if (v > max) max = v;
+  return max;
+}
+
+double HistogramAnalysis::calculate_hist_y_max(){
+  return 0;
+}
+
+int HistogramAnalysis::calculate_hist_bins(){
+  return (int)(std::sqrt(grid_sums.at(0).second.size()) * 1.6); // ??
+}
+

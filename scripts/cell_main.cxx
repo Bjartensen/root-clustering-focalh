@@ -83,9 +83,15 @@ int main(int argc, char* argv[]){
 	//std::string folder = "../data/testbeam/";
 	//std::string file = "../data/testbeam/Run_3226_monocluster.root";
 	//std::string file = "../data/focalsim/pi_plus_10000e_deg0/250_10000_small.root";
+  /*
 	std::string file = "../data/focalsim/pi_plus_1000e_deg0/250_1000_analysis.root";
 	std::string file2 = "../data/focalsim/pi_plus_1000e_deg0/60_1000_analysis.root";
 	std::string file3 = "../data/focalsim/pi_plus_1000e_deg0/350_1000_analysis.root";
+  */
+	std::string file = "../data/focalsim/pi_plus_10000e_deg0/250_10000_small.root";
+	std::string file2 = "../data/focalsim/pi_plus_10000e_deg0/60_10000_small.root";
+	std::string file3 = "../data/focalsim/pi_plus_10000e_deg0/350_10000_small.root";
+
 	//std::string file = "../data/focalsim/misc/250_1_analysis.root";
 	//std::string file = "../data/tstbeam/201_100_tb.root";
 	//std::string filename_fig = "../data/testbeam/OLD.png";
@@ -142,9 +148,15 @@ void test_histogram_analysis(){
 
 	std::cout << "Testing HistogramAnalysis" << std::endl;
 
+  /*
 	std::string test1 = Folders::ClusteredFolder+"/" + "250_ma_800_100.root";
 	std::string test2 = Folders::ClusteredFolder+"/" + "60_ma_800_100.root";
 	std::string test3 = Folders::ClusteredFolder+"/" + "350_ma_800_100.root";
+  */
+
+	std::string test1 = Folders::ClusteredFolder+"/" + "250_ma_0_0.root";
+	std::string test2 = Folders::ClusteredFolder+"/" + "60_ma_0_0.root";
+	std::string test3 = Folders::ClusteredFolder+"/" + "350_ma_0_0.root";
 	//std::string test4 = Folders::ClusteredFolder+"/" + "250_ma_0_0.root";
 	std::vector<std::string> test_vec;
 	test_vec.push_back(test1);
@@ -163,6 +175,8 @@ void test_histogram_analysis(){
 
 	ana.calculate_sums();
 	ana.squawk();
+  ana.plot("Histogram", "Test");
+
 
 }
 

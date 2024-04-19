@@ -34,7 +34,7 @@ add_library(clustering_util SHARED
 	src/cluster_reader.cxx
 	src/cluster_analysis.cxx
 	src/histogram_analysis.cxx
-	src/plot_gaussian.cxx
+	src/plot_histogram.cxx
 	include/cell.h
 	include/grid.h
 	include/clustering.h
@@ -47,7 +47,7 @@ add_library(clustering_util SHARED
 	include/cluster_reader.h
 	include/cluster_analysis.h
 	include/histogram_analysis.h
-	include/plot_gaussian.h
+	include/plot_histogram.h
 	include/definitions.h
 )
 

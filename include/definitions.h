@@ -5,13 +5,15 @@
 #include <vector>
 
 
+namespace Plotting{
+  const std::string ImageExtension = ".pdf";
+}
 
 namespace General{
 	const std::string RootExtension = ".root";
 	using float_type = double;
 	using adc_type = unsigned int;
 	using energy_type = int;
-
 
 	const std::string energy_tparameter = "energy";
 	const std::string source_tobj = "source";

@@ -15,12 +15,6 @@ bool ClusterWriter::open(){
 	if (!clustered_tfile) return false;
 	if (clustered_tfile->IsZombie()) return false;
 
-	/*
-	file.open(filename+CLUSTER_EXT, mode);
-	if (!file) return false;
-	*/
-
-
 
 	return true;
 }
