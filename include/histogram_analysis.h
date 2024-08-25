@@ -18,15 +18,17 @@ private:
   // Perhaps even something even cleverer, by combining levels?
 	Sum_T grid_sums;
 	Sum_T cluster_sums;
+
+
 public:
 	void calculate_sums();
 	void squawk();
 
   void plot(std::string name, std::string title);
 
+  void sort();
 
   double calculate_hist_x_max();
-  double calculate_hist_y_max();
   int calculate_hist_bins();
 };
 #endif // HISTOGRAM_ANALYSIS_H

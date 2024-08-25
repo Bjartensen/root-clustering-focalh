@@ -4,7 +4,11 @@
 #include <iostream>
 
 void PlotHistogram::create_tcanvas(std::string name, std::string title){
-  canvas = std::make_unique<TCanvas>("histogram", "histogram", 1);
+  canvas = std::make_unique<TCanvas>("histogram", "histogram", 5);
+  canvas->SetTickx();
+  canvas->SetTicky();
+  canvas->SetLeftMargin(0.13); // Must be adjusted depending on y-axis label
+  canvas->SetRightMargin(0.1);
 }
 
 
@@ -17,17 +21,21 @@ void PlotHistogram::create_histogram(std::vector<General::float_type> data, std:
 }
 
 void PlotHistogram::draw_hists(){
+  canvas->cd();
   update_height();
   auto_set_graphics();
   for (auto &v : histograms){
     v->Draw("same");
-    v.release();
   }
+  make_tlegend();
+  for (auto &v : histograms) v.release();
+
 }
 
 void PlotHistogram::save_to_file(std::string filename){
   canvas->cd();
   draw_hists();
+  make_header();
 
   std::string full_filename = Folders::AnalysisFolder; // needs something from definitions.h
   full_filename += "/";
@@ -70,3 +78,58 @@ void PlotHistogram::auto_set_graphics(){
     histograms.at(i)->GetYaxis()->SetTitle(y_axis_label.c_str());
   }
 }
+
+
+void PlotHistogram::make_tlegend(){
+  //TLegend *leg = canvas->BuildLegend();
+  //leg->SetHeader("test", "C");
+
+
+  std::unique_ptr<TLegend> leg;
+  leg = std::make_unique<TLegend>(0.5, 0.6, 0.88, 0.88);
+
+  leg->SetHeader(tlegend_title.c_str(), "C");
+  leg->SetBorderSize(0);
+
+  leg->SetNColumns(3);
+
+  for (auto &v : histograms){
+    leg->AddEntry(v.get(), v->GetName(), "f");
+  }
+
+
+  //leg->AddEntry(histograms.at(0).get(), "test", "l");
+  leg->Draw();
+  leg.release();
+
+}
+
+
+void PlotHistogram::make_header(){
+
+  canvas->cd();
+  // Top left
+  std::unique_ptr<TPaveText> top_left;
+  top_left = std::make_unique<TPaveText>(0.14,0.91,0.5,0.95,"NDC");
+  top_left->AddText(canvas_header_left.c_str());
+  top_left->SetBorderSize(0);
+  top_left->SetFillColor(0);
+  top_left->SetMargin(0);
+  top_left->SetTextAlign(11);
+
+  // Top right
+  std::unique_ptr<TPaveText> top_right;
+  top_right = std::make_unique<TPaveText>(0.5,0.91,0.88,0.95,"NDC");
+  top_right->AddText(canvas_header_right.c_str());
+  top_right->SetBorderSize(0);
+  top_right->SetFillColor(0);
+  top_right->SetMargin(0);
+  top_right->SetTextAlign(31);
+
+  top_left->Draw();
+  top_left.release();
+  top_right->Draw();
+  top_right.release();
+}
+
+

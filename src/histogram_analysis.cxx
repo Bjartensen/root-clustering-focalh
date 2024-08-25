@@ -3,11 +3,6 @@
 #include <iostream>
 
 void HistogramAnalysis::calculate_sums(){
-
-	// Get files
-	// open files with reader
-	// read events and add sums of grid and primary cluster
-
 	for (const auto &v : get_files()){
 		ClusterReader reader(v);
 		reader.open();
@@ -31,25 +26,29 @@ void HistogramAnalysis::calculate_sums(){
 
 
 void HistogramAnalysis::squawk(){
-	std::cout << "Grid sums:";
+	std::cout << "Hists:";
 	std::cout << std::endl;
 	for (const auto &v : grid_sums){
 		std::cout << '\t';
 		std::cout << v.first << ", " << v.second.size() << std::endl;
 	}
-
 }
 
 
 void HistogramAnalysis::plot(std::string name, std::string title){
+  sort();
   PlotHistogram hist;
   hist.create_tcanvas(name, title);
   hist.set_x_max(calculate_hist_x_max());
   hist.set_bins(calculate_hist_bins());
   hist.set_x_axis_label("Sum");
   hist.set_y_axis_label("Count");
+  hist.set_tlegend_title("Energies");
+  hist.set_canvas_header_left("FoCal-H Prototype 2");
+  hist.set_canvas_header_right("Geant4, 10E4 events per energy");
   for (int i = 0; i < grid_sums.size(); i++){
-    hist.create_histogram(grid_sums.at(i).second, name, title);
+    std::string hist_name = std::to_string(grid_sums.at(i).first)+" "+General::EnergyUnit;
+    hist.create_histogram(grid_sums.at(i).second, hist_name, "");
   }
   hist.save_to_file("test");
 
@@ -64,11 +63,10 @@ double HistogramAnalysis::calculate_hist_x_max(){
   return max;
 }
 
-double HistogramAnalysis::calculate_hist_y_max(){
-  return 0;
-}
-
 int HistogramAnalysis::calculate_hist_bins(){
   return (int)(std::sqrt(grid_sums.at(0).second.size()) * 1.6); // ??
 }
 
+void HistogramAnalysis::sort(){
+  std::sort(grid_sums.begin(), grid_sums.end());
+}

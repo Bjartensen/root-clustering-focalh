@@ -21,6 +21,7 @@
 #include "cluster_analysis.h"
 #include "cluster_reader.h"
 #include "histogram_analysis.h"
+#include "gaussian_analysis.h"
 
 const double SATURATION_VALUE = 4096;
 //const double SATURATION_VALUE = 32000;
@@ -56,6 +57,7 @@ void test_cluster_reader();
 void test_cluster_events(std::string file);
 void test_cluster_analysis();
 void test_histogram_analysis();
+void test_gaussian_analysis();
 
 
 void save_point_plot(std::vector<std::unique_ptr<TGraphErrors>> &point_plots, std::string x_label, std::string y_label, std::string legend_title, std::string filename);
@@ -88,9 +90,7 @@ int main(int argc, char* argv[]){
 	std::string file2 = "../data/focalsim/pi_plus_1000e_deg0/60_1000_analysis.root";
 	std::string file3 = "../data/focalsim/pi_plus_1000e_deg0/350_1000_analysis.root";
   */
-	std::string file = "../data/focalsim/pi_plus_10000e_deg0/250_10000_small.root";
-	std::string file2 = "../data/focalsim/pi_plus_10000e_deg0/60_10000_small.root";
-	std::string file3 = "../data/focalsim/pi_plus_10000e_deg0/350_10000_small.root";
+	std::string file = "../data/testbeam24may/Run_3230_monocluster.root";
 
 	//std::string file = "../data/focalsim/misc/250_1_analysis.root";
 	//std::string file = "../data/tstbeam/201_100_tb.root";
@@ -102,10 +102,10 @@ int main(int argc, char* argv[]){
 	auto t = static_cast<TTree*>(f->Get("T"));
 
 
-	for (int i = 0; i < 0; i++){
+	for (int i = 0; i < 10; i++){
 		g.fill_grid_ttree_entry(*t, i, true);
-		std::string temp_filename_fig = "../data/focalsim/pi_plus_1000e_deg0/" + std::to_string(i) + IMAGE_EXTENSION;
-		save_heatmap(g, temp_filename_fig, "250 GeV, pi+");
+		std::string temp_filename_fig = "../data/testbeam24may/" + std::to_string(i) + IMAGE_EXTENSION;
+		save_heatmap(g, temp_filename_fig, "?? GeV, pi+");
 	}
 
 
@@ -120,8 +120,8 @@ int main(int argc, char* argv[]){
 
 	//std::string folder = "../data/focalsim/pi_plus_10000e_deg0/";
 	//std::string folder = "../data/focalsim/pi_plus_1000e_deg0/";
-	std::string folder = "../data/focalsim/pi_plus_1000e_deg0/";
-	//std::string folder = "../data/testbeam/";
+	//std::string folder = "../data/focalsim/pi_plus_1000e_deg0/";
+	std::string folder = "../data/testbeam2024may/";
 
 
 
@@ -137,12 +137,49 @@ int main(int argc, char* argv[]){
 	//test_cluster_events(file);
 	//test_cluster_events(file2);
 	//test_cluster_events(file3);
+	//test_cluster_events(file4);
+	//test_cluster_events(file5);
+	//test_cluster_events(file6);
+	//test_cluster_events(file7);
+	//test_cluster_events(file8);
 
-	test_histogram_analysis();
+	//test_histogram_analysis();
+	test_gaussian_analysis();
 
 
 	return 0;
 }
+
+
+void test_gaussian_analysis(){
+
+	std::cout << "Testing GaussianAnalysis" << std::endl;
+
+  /*
+	std::string test1 = Folders::ClusteredFolder+"/" + "250_ma_800_100.root";
+	std::string test2 = Folders::ClusteredFolder+"/" + "60_ma_800_100.root";
+	std::string test3 = Folders::ClusteredFolder+"/" + "350_ma_800_100.root";
+  */
+
+	std::string test1 = Folders::ClusteredFolder+"/" + "250_ma_800_100.root";
+	std::string test4 = Folders::ClusteredFolder+"/" + "80_ma_800_100.root";
+	std::vector<std::string> test_vec;
+	test_vec.push_back(test1);
+	test_vec.push_back(test4);
+
+	GaussianAnalysis ana;
+
+	for (const auto &v : test_vec){
+		if (ana.add_file(v))
+			std::cout << "Added file: " << v << std::endl;
+		else
+			std::cout << "Couldn't add file: " << v << std::endl;
+	}
+
+	ana.begin_analysis();
+
+}
+
 
 void test_histogram_analysis(){
 
@@ -154,15 +191,11 @@ void test_histogram_analysis(){
 	std::string test3 = Folders::ClusteredFolder+"/" + "350_ma_800_100.root";
   */
 
-	std::string test1 = Folders::ClusteredFolder+"/" + "250_ma_0_0.root";
-	std::string test2 = Folders::ClusteredFolder+"/" + "60_ma_0_0.root";
-	std::string test3 = Folders::ClusteredFolder+"/" + "350_ma_0_0.root";
-	//std::string test4 = Folders::ClusteredFolder+"/" + "250_ma_0_0.root";
+	std::string test1 = Folders::ClusteredFolder+"/" + "250_ma_800_100.root";
+	std::string test4 = Folders::ClusteredFolder+"/" + "80_ma_800_100.root";
 	std::vector<std::string> test_vec;
 	test_vec.push_back(test1);
-	test_vec.push_back(test2);
-	test_vec.push_back(test3);
-	//test_vec.push_back(test4);
+	test_vec.push_back(test4);
 
 	HistogramAnalysis ana;
 

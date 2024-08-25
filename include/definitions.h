@@ -23,6 +23,8 @@ namespace General{
 		std::string Source = "";
 		std::string Description = "";
 	};
+
+  const std::string EnergyUnit = "GeV";
 }
 
 namespace Folders{
