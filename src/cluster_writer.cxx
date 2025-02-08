@@ -48,7 +48,37 @@ bool ClusterWriter::write_event(const long event_number){
 
 	clear_containers();
 	auto cells = clustering.get_tagged_cells();
+  Grid *g = clustering.get_grid();
+
+  
+	for (auto &c : *g->get_cells()){
+
+		x_pos.push_back(c->get_x());
+		y_pos.push_back(c->get_y());
+		value.push_back(c->get_value());
+		class_label.push_back(1);
+
+
+		auto it = cells->find(c.get());
+
+    if (it != cells->end()) {
+      cluster.push_back(it->second);
+    }else{
+      cluster.push_back("0");
+
+    }
+
+    // Search through clustering cells and find label
+    //cluster.push_back(c.second);
+
+
+  }
+
+
+
+  /*
 	for (auto it = cells->begin(); it != cells->end(); it++){
+	//for (auto it = cells->begin(); it != cells->end(); it++){
 		//write_event_line(it->first->get_x(), it->first->get_y(), it->first->get_value(), it->second);
 		
 		x_pos.push_back(it->first->get_x());
@@ -57,6 +87,7 @@ bool ClusterWriter::write_event(const long event_number){
 		class_label.push_back(1);
 		cluster.push_back(it->second);
 	}
+  */
 
 
 	ttree->Fill();

@@ -85,12 +85,12 @@ int main(int argc, char* argv[]){
 	//std::string folder = "../data/testbeam/";
 	//std::string file = "../data/testbeam/Run_3226_monocluster.root";
 	//std::string file = "../data/focalsim/pi_plus_10000e_deg0/250_10000_small.root";
-  /*
 	std::string file = "../data/focalsim/pi_plus_1000e_deg0/250_1000_analysis.root";
+  /*
 	std::string file2 = "../data/focalsim/pi_plus_1000e_deg0/60_1000_analysis.root";
 	std::string file3 = "../data/focalsim/pi_plus_1000e_deg0/350_1000_analysis.root";
   */
-	std::string file = "../data/testbeam24may/Run_3230_monocluster.root";
+	//std::string file = "../data/testbeam24may/Run_3230_monocluster.root";
 
 	//std::string file = "../data/focalsim/misc/250_1_analysis.root";
 	//std::string file = "../data/tstbeam/201_100_tb.root";
@@ -134,7 +134,7 @@ int main(int argc, char* argv[]){
 
 	//test_cluster_analysis();
 
-	//test_cluster_events(file);
+	test_cluster_events(file);
 	//test_cluster_events(file2);
 	//test_cluster_events(file3);
 	//test_cluster_events(file4);
@@ -144,7 +144,7 @@ int main(int argc, char* argv[]){
 	//test_cluster_events(file8);
 
 	//test_histogram_analysis();
-	test_gaussian_analysis();
+	//test_gaussian_analysis();
 
 
 	return 0;

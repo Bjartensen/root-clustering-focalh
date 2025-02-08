@@ -59,7 +59,7 @@ public:
 
   int find_height();
   void update_height();
-  
+
   double get_x_max(){return x_max;}
   int get_bins(){return bins;}
 	
