@@ -35,16 +35,6 @@ bool ClusterWriter::write_event(const long event_number){
 
 
 	// Write event header
-	//write_event_header(event_number);
-
-	// Write event
-	//for (auto it = cells.begin(); it != cells.end(); it++){
-	
-
-	// I think I should get the Grid and loop over all cells
-	// and try and match them with Clustering tagged cells.
-	// If they are not found I set the tag to 0 or -1.
-
 
 	clear_containers();
 	auto cells = clustering.get_tagged_cells();
@@ -68,27 +58,8 @@ bool ClusterWriter::write_event(const long event_number){
 
     }
 
-    // Search through clustering cells and find label
-    //cluster.push_back(c.second);
-
 
   }
-
-
-
-  /*
-	for (auto it = cells->begin(); it != cells->end(); it++){
-	//for (auto it = cells->begin(); it != cells->end(); it++){
-		//write_event_line(it->first->get_x(), it->first->get_y(), it->first->get_value(), it->second);
-		
-		x_pos.push_back(it->first->get_x());
-		y_pos.push_back(it->first->get_y());
-		value.push_back(it->first->get_value());
-		class_label.push_back(1);
-		cluster.push_back(it->second);
-	}
-  */
-
 
 	ttree->Fill();
 	//ttree->Write();

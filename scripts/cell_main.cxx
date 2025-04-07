@@ -85,7 +85,9 @@ int main(int argc, char* argv[]){
 	//std::string folder = "../data/testbeam/";
 	//std::string file = "../data/testbeam/Run_3226_monocluster.root";
 	//std::string file = "../data/focalsim/pi_plus_10000e_deg0/250_10000_small.root";
-	std::string file = "../data/focalsim/pi_plus_1000e_deg0/250_1000_analysis.root";
+	//std::string file = "../data/focalsim/pi_plus_1000e_deg0/250_1000_analysis.root";
+	std::string file = "/home/bjartur/workspace/focalh_data_transformer/data/adsf.root";
+
   /*
 	std::string file2 = "../data/focalsim/pi_plus_1000e_deg0/60_1000_analysis.root";
 	std::string file3 = "../data/focalsim/pi_plus_1000e_deg0/350_1000_analysis.root";
