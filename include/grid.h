@@ -25,6 +25,7 @@ public:
 	void make_cell(double _x, double _y, double _val, double _w, double _h, std::string _id);
 
 	Cell* get_cell(std::string _id);
+  Cell* get_cell(General::float_type x, General::float_type y);
 	// setup
 	// something that fills
 	bool Fill(double _x, double _y, double _val);
@@ -44,6 +45,7 @@ public:
 	// and simulation files have different branch addresses than the one I have
 	// now defined in the definitions.h
 	bool fill_grid_ttree_entry2(TTree& t, int e, bool override_values);
+  bool fill_grid_event_ptr(TFileGeneric::EventPtr &ptr, bool override_values);
 };
 
 #endif // GRID_H

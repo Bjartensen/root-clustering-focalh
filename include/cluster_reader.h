@@ -15,15 +15,15 @@ private:
 	TTree* ttree;
 	std::string filename;
 	unsigned long entry;
-	TTreeClustered::EventPtr event; // Event with pointers to x,y... etc
+	TFileGeneric::EventPtr event; // Event with pointers to x,y... etc
 	General::EventsHeader header;
 
 public:
 	ClusterReader(std::string _filename) : filename(_filename), entry(0){}
 	bool open();
 	bool close();
-	bool read_event(TTreeClustered::EventPtr &ev);
-	bool read_event(TTreeClustered::EventPtr &ev, unsigned long en);
+	bool read_event(TFileGeneric::EventPtr &ev);
+	bool read_event(TFileGeneric::EventPtr &ev, unsigned long en);
 
 
 	void read_events_header();

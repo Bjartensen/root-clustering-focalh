@@ -34,7 +34,7 @@ add_library(clustering_util SHARED
 	src/cluster_reader.cxx
 	src/cluster_analysis.cxx
 	src/histogram_analysis.cxx
-  src/gaussian_analysis.cxx
+  # src/gaussian_analysis.cxx
 	src/plot_histogram.cxx
 	include/cell.h
 	include/grid.h
@@ -48,7 +48,7 @@ add_library(clustering_util SHARED
 	include/cluster_reader.h
 	include/cluster_analysis.h
 	include/histogram_analysis.h
-  include/gaussian_analysis.h
+  # include/gaussian_analysis.h
 	include/plot_histogram.h
 	include/definitions.h
 )
@@ -73,10 +73,12 @@ add_executable(extract_digits_main                  ./scripts/extract_digits.cxx
 add_executable(hist									./scripts/hist.cxx)
 add_executable(cell_main									./scripts/cell_main.cxx)
 add_executable(testbeam_reconstruct									./scripts/testbeam_reconstruct.cxx)
+add_executable(cluster_file									./scripts/cluster_file.cxx)
 
 target_link_libraries(extract_digits_main                     clustering_util)
 target_link_libraries(hist                     clustering_util)
 target_link_libraries(cell_main                     clustering_util)
 target_link_libraries(testbeam_reconstruct                     clustering_util)
+target_link_libraries(cluster_file                     clustering_util)
 
 #ROOT_GENERATE_DICTIONARY(myapp_dict myapp.h MODULE myapp LINKDEF LinkDef.h)

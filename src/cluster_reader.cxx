@@ -6,7 +6,7 @@
 bool ClusterReader::open(){
 	clustered_tfile = std::make_unique<TFile>(filename.c_str(), "READ");
 	if (clustered_tfile->IsZombie()) return false;
-	ttree = clustered_tfile->Get<TTree>(TTreeClustered::TreeName.c_str());
+	ttree = clustered_tfile->Get<TTree>(TFileGeneric::TreeName.c_str());
 	if (!ttree) return false;
 	set_ttree_branches();
 
@@ -19,7 +19,7 @@ bool ClusterReader::close(){
 	return true;
 }
 
-bool ClusterReader::read_event(TTreeClustered::EventPtr &ev){
+bool ClusterReader::read_event(TFileGeneric::EventPtr &ev){
 	if (entry >= ttree->GetEntries()) return false;
 	ttree->GetEntry(entry);
 	ev = event;
@@ -27,7 +27,7 @@ bool ClusterReader::read_event(TTreeClustered::EventPtr &ev){
 	return true;
 }
 
-bool ClusterReader::read_event(TTreeClustered::EventPtr &ev, unsigned long en){
+bool ClusterReader::read_event(TFileGeneric::EventPtr &ev, unsigned long en){
 	if (en >= ttree->GetEntries()) return false;
 	ttree->GetEntry(en);
 	ev = event;
@@ -35,11 +35,14 @@ bool ClusterReader::read_event(TTreeClustered::EventPtr &ev, unsigned long en){
 }
 
 void ClusterReader::set_ttree_branches(){
-	ttree->SetBranchAddress(TTreeClustered::x_branch.c_str(), &event.x);
-	ttree->SetBranchAddress(TTreeClustered::y_branch.c_str(), &event.y);
-	ttree->SetBranchAddress(TTreeClustered::value_branch.c_str(), &event.value);
-	ttree->SetBranchAddress(TTreeClustered::class_branch.c_str(), &event.class_label);
-	ttree->SetBranchAddress(TTreeClustered::cluster_branch.c_str(), &event.cluster);
+	ttree->SetBranchAddress(TFileGeneric::x_branch.c_str(), &event.x);
+	ttree->SetBranchAddress(TFileGeneric::y_branch.c_str(), &event.y);
+	ttree->SetBranchAddress(TFileGeneric::value_branch.c_str(), &event.value);
+	ttree->SetBranchAddress(TFileGeneric::label_branch.c_str(), &event.labels);
+	ttree->SetBranchAddress(TFileGeneric::label_idx_branch.c_str(), &event.label_idx);
+	ttree->SetBranchAddress(TFileGeneric::energies_branch.c_str(), &event.energies);
+	ttree->SetBranchAddress(TFileGeneric::clusters_branch.c_str(), &event.clusters);
+	ttree->SetBranchAddress(TFileGeneric::cluster_idx_branch.c_str(), &event.cluster_idx);
 }
 
 

@@ -2,7 +2,7 @@
 
 // TO-DO: The file was half-finished and didn't compile. I have made some changes just to make it compile, but it is NOT finished.
 
-unsigned int vector_sum(TTreeClustered::value_type &vec);
+unsigned int vector_sum(General::adc_type &vec);
 
 void GaussianAnalysis::squawk(){
 	std::cout << "Gaussian anlysis:";
@@ -23,7 +23,7 @@ void GaussianAnalysis::begin_analysis(int clusters){
     ClusterReader reader(v);
     reader.open();
     reader.read_events_header();
-    TTreeClustered::EventPtr event;
+    TFileGeneric::EventPtr event;
     std::vector<Cluster_Vec> events_vec;
 
     // For each event, loop through clusters
@@ -34,8 +34,8 @@ void GaussianAnalysis::begin_analysis(int clusters){
       Cluster_Vec inner_vec;
       // vector so I can sort by largest?
 
-      for (int i = 0; i < event.cluster->size(); i++){
-        fill_map(inner_map, event.cluster->at(i), event.value->at(i));
+      for (int i = 0; i < event.clusters->size(); i++){
+        fill_map(inner_map, event.clusters->at(i), event.value->at(i));
       }
 
       // I want it as sorted vectors
@@ -95,7 +95,7 @@ void GaussianAnalysis::fit_gaussian(std::vector<Cluster_Vec> &events, int min, i
 // function that adds cluster tag and value
 // if the tag exists, just adds to the vector
 // if it doesn't exist add new entry to map
-void GaussianAnalysis::fill_map(Cluster_Map &map, std::string tag, General::adc_type val){
+void GaussianAnalysis::fill_map(Cluster_Map &map, unsigned int tag, General::adc_type val){
   auto it = map.find(tag);
   if (it == map.end()){
     std::vector<General::adc_type> vec;
@@ -107,8 +107,8 @@ void GaussianAnalysis::fill_map(Cluster_Map &map, std::string tag, General::adc_
 }
 
 
-unsigned int vector_sum(TTreeClustered::value_type &vec){
-  unsigned int sum = 0;
+unsigned int vector_sum(General::adc_type &vec){
+  General::adc_type sum = 0;
   for (const auto &v : vec)
     sum += v;
   return sum;
@@ -118,8 +118,7 @@ unsigned int vector_sum(TTreeClustered::value_type &vec){
 bool GaussianAnalysis::open(){
 
 	clustered_tfile = std::make_unique<TFile>(filename.c_str(), "RECREATE");
-	//ttree = std::make_unique<TTree>(TTreeClustered::TreeName.c_str(), TTreeClustered::TreeTitle.c_str());
-	ttree = clustered_tfile->Get<TTree>(TTreeClustered::TreeName.c_str());
+	ttree = clustered_tfile->Get<TTree>(TFileGeneric::TreeName.c_str());
 	//clustered_tfile->cd();
 
 	//if (!set_ttree_branches()) return false;

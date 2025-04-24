@@ -39,12 +39,17 @@ private:
 	TTreeClustered::class_type class_label;
 	TTreeClustered::cluster_type cluster;
 
+  // TFileGeneric::EventPtr
+
 	struct EventLine{
 		double x;
 		double y;
 		double val;
 		std::string cluster_id;
 	};
+
+
+  TFileGeneric::EventPtr event;
 	
 	General::EventsHeader header;
 
@@ -68,7 +73,7 @@ public:
 	bool close();
 	
 	// Write
-	bool write_event(const long event_number);
+	bool write_event(TFileGeneric::EventPtr &ptr);
 	//bool write_event_header(const long event_number);
 	//bool write_event_line(double x, double y, double _value, std::string _cluster);
 

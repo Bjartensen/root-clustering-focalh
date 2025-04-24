@@ -21,6 +21,13 @@ Cell* Grid::get_cell(std::string _id){
 	return nullptr;
 }
 
+Cell* Grid::get_cell(General::float_type x, General::float_type y){
+	for (auto &v : cells)
+		if (v->hit(x, y)){
+			return v.get();
+		}
+	return nullptr;
+}
 
 std::unique_ptr<TH2Poly> Grid::plot_grid(){
 	std::unique_ptr<TH2Poly> ptr = std::make_unique<TH2Poly>();
@@ -138,6 +145,7 @@ double Grid::get_grid_sum(){
 
 
 
+// TO-DO: Delete in favor of event_ptr version
 bool Grid::fill_grid_ttree_entry(TTree& t, int e, bool override_values){
 
 	std::vector<Double_t>* x_pos = nullptr;
@@ -146,9 +154,9 @@ bool Grid::fill_grid_ttree_entry(TTree& t, int e, bool override_values){
 	//std::vector<Double_t>* particle = nullptr;
 
 
-	t.SetBranchAddress("x_pos", &x_pos);
-	t.SetBranchAddress("y_pos", &y_pos);
-	t.SetBranchAddress("value", &value);
+	t.SetBranchAddress(TFileGeneric::x_branch.c_str(), &x_pos);
+	t.SetBranchAddress(TFileGeneric::y_branch.c_str(), &y_pos);
+	t.SetBranchAddress(TFileGeneric::value_branch.c_str(), &value);
 	//t.SetBranchAddress("particle", &particle);
 
 	t.GetEntry(e);
@@ -163,25 +171,16 @@ bool Grid::fill_grid_ttree_entry(TTree& t, int e, bool override_values){
 	return true;
 }
 
-bool Grid::fill_grid_ttree_entry2(TTree& t, int e, bool override_values){
-
-	TTreeClustered::EventPtr event;
-	//std::vector<Double_t>* particle = nullptr;
 
 
-	t.SetBranchAddress(TTreeClustered::x_branch.c_str(), &event.x);
-	t.SetBranchAddress(TTreeClustered::y_branch.c_str(), &event.y);
-	t.SetBranchAddress(TTreeClustered::value_branch.c_str(), &event.value);
-	//t.SetBranchAddress("particle", &particle);
-
-	t.GetEntry(e);
-
-	for (int i = 0; i < event.x->size(); i++){
-		if (override_values)
-			SetCellValues(event.x->at(i), event.y->at(i), event.value->at(i));
-		else
-			Fill(event.x->at(i), event.y->at(i), event.value->at(i));
+bool Grid::fill_grid_event_ptr(TFileGeneric::EventPtr &ptr, bool override_values){
+	for (int i = 0; i < ptr.x->size(); i++){
+		if (override_values){
+			SetCellValues(ptr.x->at(i), ptr.y->at(i), ptr.value->at(i));
+    }
+		else{
+			Fill(ptr.x->at(i), ptr.y->at(i), ptr.value->at(i));
+    }
 	}
-
 	return true;
 }

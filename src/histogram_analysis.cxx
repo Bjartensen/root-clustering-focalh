@@ -8,7 +8,7 @@ void HistogramAnalysis::calculate_sums(){
 		reader.open();
 
 		reader.read_events_header();
-		TTreeClustered::EventPtr event;
+		TFileGeneric::EventPtr event;
 		std::cout << v << std::endl;
 		std::vector<General::float_type> sums;
 		while (reader.read_event(event)){

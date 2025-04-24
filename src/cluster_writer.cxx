@@ -7,7 +7,7 @@
 bool ClusterWriter::open(){
 
 	clustered_tfile = std::make_unique<TFile>(filename.c_str(), "RECREATE");
-	ttree = std::make_unique<TTree>(TTreeClustered::TreeName.c_str(), TTreeClustered::TreeTitle.c_str());
+	ttree = std::make_unique<TTree>(TFileGeneric::TreeName.c_str(), TFileGeneric::TreeTitle.c_str());
 	//clustered_tfile->cd();
 
 	if (!set_ttree_branches()) return false;
@@ -28,11 +28,9 @@ bool ClusterWriter::close(){
 }
 
 
-bool ClusterWriter::write_event(const long event_number){
-
+bool ClusterWriter::write_event(TFileGeneric::EventPtr &ptr){
 
 	clustered_tfile->cd(); // I think I need this
-
 
 	// Write event header
 
@@ -40,26 +38,33 @@ bool ClusterWriter::write_event(const long event_number){
 	auto cells = clustering.get_tagged_cells();
   Grid *g = clustering.get_grid();
 
+
+
+  *event.x = *ptr.x;
+  *event.y = *ptr.y;
+  *event.value = *ptr.value;
+  *event.energies = *ptr.energies;
+
+  *event.labels = *ptr.labels;
+  *event.label_idx = *ptr.label_idx;
+  *event.fractions = *ptr.fractions;
   
-	for (auto &c : *g->get_cells()){
-
-		x_pos.push_back(c->get_x());
-		y_pos.push_back(c->get_y());
-		value.push_back(c->get_value());
-		class_label.push_back(1);
 
 
-		auto it = cells->find(c.get());
+  for (int i = 0; i < ptr.x->size(); i++){
 
+    Cell* c = g->get_cell(ptr.x->at(i), ptr.y->at(i));
+		auto it = cells->find(c);
     if (it != cells->end()) {
-      cluster.push_back(it->second);
+      // TO-DO: Clusters should just be integers...
+      event.clusters->push_back(std::stoi(it->second));
+      event.cluster_idx->push_back(i);
     }else{
-      cluster.push_back("0");
-
+      event.clusters->push_back(0);
+      event.cluster_idx->push_back(i);
     }
-
-
   }
+
 
 	ttree->Fill();
 	//ttree->Write();
@@ -72,22 +77,31 @@ bool ClusterWriter::write_event(const long event_number){
 
 bool ClusterWriter::set_ttree_branches(){
 
-	ttree->Branch(TTreeClustered::x_branch.c_str(), &x_pos);
-	ttree->Branch(TTreeClustered::y_branch.c_str(), &y_pos);
-	ttree->Branch(TTreeClustered::value_branch.c_str(), &value);
-	ttree->Branch(TTreeClustered::class_branch.c_str(), &class_label);
-	ttree->Branch(TTreeClustered::cluster_branch.c_str(), &cluster);
+	ttree->Branch(TFileGeneric::x_branch.c_str(), &event.x);
+	ttree->Branch(TFileGeneric::y_branch.c_str(), &event.y);
+	ttree->Branch(TFileGeneric::value_branch.c_str(), &event.value);
+	ttree->Branch(TFileGeneric::energies_branch.c_str(), &event.energies);
+
+	ttree->Branch(TFileGeneric::label_branch.c_str(), &event.labels);
+	ttree->Branch(TFileGeneric::label_idx_branch.c_str(), &event.label_idx);
+	ttree->Branch(TFileGeneric::fractions_branch.c_str(), &event.fractions);
+
+	ttree->Branch(TFileGeneric::clusters_branch.c_str(), &event.clusters);
+	ttree->Branch(TFileGeneric::cluster_idx_branch.c_str(), &event.cluster_idx);
 
 	return true;
 }
 
 
 bool ClusterWriter::clear_containers(){
-	x_pos.clear();
-	y_pos.clear();
-	value.clear();
-	class_label.clear();
-	cluster.clear();
+
+  // event.x->...
+
+  event.x->clear();
+	event.y->clear();
+	event.value->clear();
+	event.labels->clear();
+	event.clusters->clear();
 	return true;
 }
 

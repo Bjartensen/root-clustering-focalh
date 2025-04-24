@@ -26,7 +26,7 @@ public:
 
   void begin_analysis(int clusters = 1);
   void squawk();
-  void fill_map(Cluster_Map &map, std::string tag, General::adc_type val);
+  void fill_map(Cluster_Map &map, unsigned int tag, General::adc_type val);
 };
 
 

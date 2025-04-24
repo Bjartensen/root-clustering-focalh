@@ -21,7 +21,6 @@
 #include "cluster_analysis.h"
 #include "cluster_reader.h"
 #include "histogram_analysis.h"
-#include "gaussian_analysis.h"
 
 const double SATURATION_VALUE = 4096;
 //const double SATURATION_VALUE = 32000;
@@ -53,11 +52,9 @@ double standard_error(std::vector<double> &samples);
 
 
 void test_cluster_writer(std::string file);
-void test_cluster_reader();
 void test_cluster_events(std::string file);
 void test_cluster_analysis();
 void test_histogram_analysis();
-void test_gaussian_analysis();
 
 
 void save_point_plot(std::vector<std::unique_ptr<TGraphErrors>> &point_plots, std::string x_label, std::string y_label, std::string legend_title, std::string filename);
@@ -103,12 +100,16 @@ int main(int argc, char* argv[]){
 	std::unique_ptr<TFile> f = std::make_unique<TFile>(file.c_str(), "READ");
 	auto t = static_cast<TTree*>(f->Get("T"));
 
+  std::cout << "File opened..." << std::endl;
 
+  /*
 	for (int i = 0; i < 10; i++){
 		g.fill_grid_ttree_entry(*t, i, true);
 		std::string temp_filename_fig = "../data/testbeam24may/" + std::to_string(i) + IMAGE_EXTENSION;
 		save_heatmap(g, temp_filename_fig, "?? GeV, pi+");
 	}
+  */
+
 
 
 	//for (const auto &v : *g.get_cells()){
@@ -152,35 +153,41 @@ int main(int argc, char* argv[]){
 	return 0;
 }
 
+void test_cluster_events(std::string file){
 
-void test_gaussian_analysis(){
+	FoCalH focal;
+	Grid &g = focal.get_grid();
 
-	std::cout << "Testing GaussianAnalysis" << std::endl;
+	std::cout << "Testing ClusterEvents" << std::endl;
 
-  /*
-	std::string test1 = Folders::ClusteredFolder+"/" + "250_ma_800_100.root";
-	std::string test2 = Folders::ClusteredFolder+"/" + "60_ma_800_100.root";
-	std::string test3 = Folders::ClusteredFolder+"/" + "350_ma_800_100.root";
-  */
+	//std::unique_ptr<TFile> f = std::make_unique<TFile>(file.c_str(), "READ");
+	//std::cout << "Opening file: " << file << std::endl;
 
-	std::string test1 = Folders::ClusteredFolder+"/" + "250_ma_800_100.root";
-	std::string test4 = Folders::ClusteredFolder+"/" + "80_ma_800_100.root";
-	std::vector<std::string> test_vec;
-	test_vec.push_back(test1);
-	test_vec.push_back(test4);
+	// Prepare Clustering objects
+	std::vector<std::unique_ptr<Clustering>> clustering_vec;
+	std::unique_ptr<Clustering> ma1;
+	ma1 = std::make_unique<ModifiedAggregation>(0, 0);
+	std::unique_ptr<Clustering> ma2;
+	ma2 = std::make_unique<ModifiedAggregation>(800, 100);
+	clustering_vec.push_back(std::move(ma1));
+	clustering_vec.push_back(std::move(ma2));
 
-	GaussianAnalysis ana;
+  std::cout << "Opening ..." << std::endl;
+	ClusterEvents clusterizer(file, "cell_main_test");
+	clusterizer.open();
+  std::cout << "Opened." << std::endl;
+	clusterizer.set_events_header_source("mc");
+	clusterizer.set_events_header_description("Geant4 Monte-Carlo");
+  std::cout << "Running clustering..." << std::endl;
+	clusterizer.run_clustering(clustering_vec, g, 0, 0);
+  std::cout << "Clustered." << std::endl;
+	clusterizer.close();
 
-	for (const auto &v : test_vec){
-		if (ana.add_file(v))
-			std::cout << "Added file: " << v << std::endl;
-		else
-			std::cout << "Couldn't add file: " << v << std::endl;
-	}
+  std::cout << "Closing ..." << std::endl;
 
-	ana.begin_analysis();
 
 }
+
 
 
 void test_histogram_analysis(){
@@ -215,77 +222,7 @@ void test_histogram_analysis(){
 
 }
 
-void test_cluster_events(std::string file){
 
-
-	FoCalH focal;
-	Grid &g = focal.get_grid();
-
-	std::cout << "Testing ClusterEvents" << std::endl;
-
-	//std::unique_ptr<TFile> f = std::make_unique<TFile>(file.c_str(), "READ");
-	//std::cout << "Opening file: " << file << std::endl;
-
-	// Prepare Clustering objects
-	std::vector<std::unique_ptr<Clustering>> clustering_vec;
-	std::unique_ptr<Clustering> ma1;
-	ma1 = std::make_unique<ModifiedAggregation>(0, 0);
-	std::unique_ptr<Clustering> ma2;
-	ma2 = std::make_unique<ModifiedAggregation>(800, 100);
-	clustering_vec.push_back(std::move(ma1));
-	clustering_vec.push_back(std::move(ma2));
-
-	ClusterEvents clusterizer(file);
-	clusterizer.open();
-	clusterizer.set_events_header_source("mc");
-	clusterizer.set_events_header_description("Geant4 Monte-Carlo");
-	clusterizer.run_clustering(clustering_vec, g, 0, 0);
-	clusterizer.close();
-
-
-
-}
-
-
-void test_cluster_reader(){
-	std::cout << "Testing ClusterReader" << std::endl;
-
-	std::string test1 = "adsf";
-	std::string test2 = "ma_800_100.root";
-	std::string test3 = Folders::ClusteredFolder+"/" + "ma_800_100.root";
-	std::string test4 = Folders::ClusteredFolder+"/" + "ma_0_0.root";
-	std::vector<std::string> test_vec;
-	test_vec.push_back(test1);
-	test_vec.push_back(test2);
-	test_vec.push_back(test3);
-	test_vec.push_back(test4);
-
-	ClusterReader reader(test3);
-	if (!reader.open()) std::cout << "couldn't open" << std::endl;
-	
-	TTreeClustered::EventPtr e;
-
-	int cnt = 0;
-	while(reader.read_event(e)){
-		cnt++;
-		//std::cout << "x.size(): " << e.x->size() << std::endl;
-	}
-	std::cout << "Read " << cnt << " entries." << std::endl;
-
-	reader.read_event(e,0);
-	
-	FoCalH focal;
-	Grid &g = focal.get_grid();
-
-
-	g.fill_grid_ttree_entry2(*reader.get_ttree(), 0, true);
-	save_heatmap(g, "heatmap_"+std::to_string(0)+"_reader.png", std::to_string(0));
-
-	// should try and plot a Grid
-	
-
-	reader.close();
-}
 
 void test_cluster_analysis(){
 
@@ -310,7 +247,7 @@ void test_cluster_analysis(){
 	std::cout << ana.show_files() << std::endl;
 
 
-	TTreeClustered::EventPtr e;
+	TFileGeneric::EventPtr e;
 	ClusterReader reader(test4);
 	reader.open();
 	reader.read_event(e);
@@ -318,87 +255,6 @@ void test_cluster_analysis(){
 	reader.close();
 
 }
-
-
-
-
-
-
-
-
-void test_cluster_writer(std::string file){
-	FoCalH focal;
-	Grid &g = focal.get_grid();
-
-	std::string folder;
-	std::string filename = "test";
-
-	std::unique_ptr<TFile> f = std::make_unique<TFile>(file.c_str(), "READ");
-	std::cout << "Opening file: " << file << std::endl;
-	auto t = static_cast<TTree*>(f->Get("T"));
-	int energy_temp = static_cast<TParameter<int>*>(f->Get("energy"))->GetVal();
-
-	std::vector<double> cluster_adc_sums;
-	std::vector<double> second_cluster_adc_sums;
-	std::vector<double> grid_adc_sums;
-	std::vector<double> leftover_grid_adc_sums;
-
-	double seed_threshold = 0;
-	double aggregation_threshold = 0;
-	//ModifiedAggregation ma(g, seed_threshold, aggregation_threshold);
-	ModifiedAggregation ma(seed_threshold, aggregation_threshold);
-
-	ClusterWriter writer(ma, filename, std::ios_base::out);
-	writer.open();
-
-	// For each event
-	for (int e = 38; e < 40; e++){
-
-		std::cout << "Clustering event " << e << std::endl;
-
-		g.fill_grid_ttree_entry(*t, e, true);
-
-
-		save_heatmap(g, "heatmap_"+std::to_string(e)+"_write.png", std::to_string(e));
-
-		ma.set_grid(g);
-		
-		// Any clusters found
-		if (ma.tag()){
-			std::string main_cluster = ma.get_largest_cluster();
-			cluster_adc_sums.push_back(ma.get_cluster_sum(main_cluster));
-			leftover_grid_adc_sums.push_back(g.get_grid_sum() - ma.get_cluster_sum(main_cluster));
-
-
-		// No clusters found
-		}else{
-			cluster_adc_sums.push_back(0.0);
-			leftover_grid_adc_sums.push_back(g.get_grid_sum());
-		}
-		grid_adc_sums.push_back(g.get_grid_sum());
-
-		// 3 + 3*7 = 0,0
-		int idx = 3 + 3*7;
-		//int idx = 3 + 3*7*5;
-		Cell &gc = *ma.get_grid()->get_cells()->at(idx).get();
-		auto ccm = ma.get_tagged_cells()->at(&gc);
-		std::cout << gc.get_x() << "," << gc.get_y() << "," << gc.get_value() << ",tag:" << ccm << std::endl;
-
-
-
-		if (!writer.write_event(e))
-			std::cout << "Couldn't write" << std::endl;
-
-
-	}
-
-	writer.close();
-
-
-
-
-}
-
 
 bool MA_reconstructed_energies(std::string folder, double seed_threshold, double aggregation_threshold){
 

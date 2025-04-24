@@ -3,9 +3,11 @@
 #include <iostream>
 
 bool ClusterEvents::open(){
-	events_file = std::make_unique<TFile>(filename.c_str(), tfile_options.c_str());
+	events_file = std::make_unique<TFile>(in_filename.c_str(), tfile_options.c_str());
 	if (!events_file) return false;
 	if (events_file->IsZombie()) return false;
+  in_ttree = events_file->Get<TTree>(TFileGeneric::TreeName.c_str());
+  if (!in_ttree) return false;
 	return true;
 }
 
@@ -16,28 +18,32 @@ bool ClusterEvents::close(){
 
 bool ClusterEvents::run_clustering(vec_cl_ptr &clustering_vec, Grid &g, unsigned long start, unsigned long end){
 
+
 	if (clustering_vec.size() == 0) return false;
 
-	set_events_header_energy(get_ttree_energy(*events_file));
+
+  set_in_ttree_branches();
+
 	std::vector<std::unique_ptr<ClusterWriter>> writers;
-	setup_writers(writers, clustering_vec);
+	setup_writers(writers, clustering_vec, out_filename);
 
 
 	// Get tree and check for bounds
-	std::unique_ptr<TTree> ttree(events_file->Get<TTree>(TTreeData::TreeName.c_str()));
-	if (end == 0) end = ttree->GetEntries();
+	if (end == 0) end = in_ttree->GetEntries();
 	if (end - start <= 0) return false;
 
 	// For each event, loop through clustering_vec and perform clustering
 	for (long e = start; e < end; e++){
-		for (auto &v : clustering_vec) v->set_grid(g); // Performance hit
-		g.fill_grid_ttree_entry(*ttree, e, true);
+    in_ttree->GetEntry(e);
+    g.fill_grid_event_ptr(in_event, true);
+		for (auto &v : clustering_vec) v->set_grid(g); // TO-DO: Performance hit?
 		cluster_event(clustering_vec);
-		write_event(writers, e);
+		write_event(writers, in_event); // TO-DO: Here I want to supply EventPtr?
 	}
 
 	// Clean up
 	for (auto &v : writers) v->close();
+
 
 	return true;
 }
@@ -50,22 +56,22 @@ bool ClusterEvents::cluster_event(vec_cl_ptr &clustering_vec){
 }
 
 
-bool ClusterEvents::write_event(std::vector<std::unique_ptr<ClusterWriter>> &writers, long event_number){
-	for (auto &v : writers) v->write_event(event_number);
+bool ClusterEvents::write_event(std::vector<std::unique_ptr<ClusterWriter>> &writers, TFileGeneric::EventPtr &ptr){
+	for (auto &v : writers) v->write_event(ptr);
 	return true;
 }
 
 
 void ClusterEvents::setup_writers(
 		std::vector<std::unique_ptr<ClusterWriter>> &writers,
-		vec_cl_ptr &clustering_vec){
+		vec_cl_ptr &clustering_vec, std::string filename){
 
 	for (auto &v : clustering_vec){
 		std::unique_ptr<ClusterWriter> w;
-		std::string filename = std::to_string(get_ttree_energy(*events_file));
-		filename += "_"+v->name();
-		filename = get_full_path(filename);
-		w = std::make_unique<ClusterWriter>(*v, filename, std::ios_base::out);
+    std::string temp_filename = filename;
+		temp_filename += "_"+v->name();
+		temp_filename = get_full_path(temp_filename);
+		w = std::make_unique<ClusterWriter>(*v, temp_filename, std::ios_base::out);
 		w->open();
 		w->set_events_header(header);
 		w->write_events_header();
@@ -75,7 +81,7 @@ void ClusterEvents::setup_writers(
 
 
 std::string ClusterEvents::get_full_path(std::string algo_pars){
-	return Folders::ClusteredFolder+"/"+algo_pars+General::RootExtension;
+	return Folders::ClusteredFolder+"/"+algo_pars+General::RootFileExtension;
 }
 
 
@@ -96,4 +102,15 @@ void ClusterEvents::set_events_header_description(std::string description){
 General::energy_type ClusterEvents::get_ttree_energy(TFile &f){
 	auto tparameter = static_cast<TParameter<int>*>(f.Get(TTreeData::Energy.c_str()));
 	return tparameter->GetVal();
+}
+
+
+void ClusterEvents::set_in_ttree_branches(){
+  in_ttree->SetBranchAddress(TFileGeneric::x_branch.c_str(), &in_event.x);
+  in_ttree->SetBranchAddress(TFileGeneric::y_branch.c_str(), &in_event.y);
+  in_ttree->SetBranchAddress(TFileGeneric::value_branch.c_str(), &in_event.value);
+  in_ttree->SetBranchAddress(TFileGeneric::label_branch.c_str(), &in_event.labels);
+  in_ttree->SetBranchAddress(TFileGeneric::label_idx_branch.c_str(), &in_event.label_idx);
+  in_ttree->SetBranchAddress(TFileGeneric::fractions_branch.c_str(), &in_event.fractions);
+  in_ttree->SetBranchAddress(TFileGeneric::energies_branch.c_str(), &in_event.energies);
 }
