@@ -102,6 +102,7 @@ bool ClusterWriter::clear_containers(){
 	event.value->clear();
 	event.labels->clear();
 	event.clusters->clear();
+	event.cluster_idx->clear();
 	return true;
 }
 
