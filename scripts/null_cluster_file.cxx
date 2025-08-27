@@ -1,4 +1,4 @@
-#include "modified_aggregation.h"
+#include "null_clustering.h"
 #include <iostream>
 #include "focalh.h"
 #include "cluster_events.h"
@@ -14,17 +14,14 @@ int main(int argc, char* argv[]){
 	FoCalH focal;
 	Grid &g = focal.get_grid();
 
-	std::cout << "Testing ClusterEvents" << std::endl;
+	std::cout << "Null clustering" << std::endl;
 
 
 	// Prepare Clustering objects
 	std::vector<std::unique_ptr<Clustering>> clustering_vec;
-	//std::unique_ptr<Clustering> ma1;
-	//ma1 = std::make_unique<ModifiedAggregation>(0, 0);
-	std::unique_ptr<Clustering> ma2;
-	ma2 = std::make_unique<ModifiedAggregation>(800, 100);
-	//clustering_vec.push_back(std::move(ma1));
-	clustering_vec.push_back(std::move(ma2));
+	std::unique_ptr<Clustering> null;
+	null = std::make_unique<NullClustering>();
+	clustering_vec.push_back(std::move(null));
 
   std::cout << "Opening ..." << std::endl;
 	ClusterEvents clusterizer(argv[1], argv[2]);
@@ -38,7 +35,6 @@ int main(int argc, char* argv[]){
 	clusterizer.close();
 
   std::cout << "Closing ..." << std::endl;
-
 
   return 0;
 }

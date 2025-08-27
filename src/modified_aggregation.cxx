@@ -43,6 +43,9 @@ bool ModifiedAggregation::spread(Cell *c){
 				if (v->get_value() < aggregation_threshold)
 					continue;
 				if (v->get_value() <= tc->get_value()){
+          // According to the paper, if this is false (encountering greater cell)
+          // it might stop spreading altogether if this is encountered.
+          // Don't know if that is correctly interpreted.
 					add_tag(cluster_tag, v);
 					more_spread = true;
 				}

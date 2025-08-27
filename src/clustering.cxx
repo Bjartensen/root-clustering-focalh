@@ -34,11 +34,13 @@ void Clustering::print_tagged(){
 }
 
 void Clustering::add_tag(std::string tag, Cell* c){
+  // This may do something funky.
+  // If I loop over untagged and tag I will only tag half
 	tagged_cells[c] = tag;
 	auto it = std::find(untagged_cells.begin(), untagged_cells.end(), c);
-	if (it != untagged_cells.end())
+	if (it != untagged_cells.end()){
 		untagged_cells.erase(it);
-
+  }
 }
 
 bool Clustering::is_tagged(Cell* c){
